@@ -1,0 +1,1687 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Fabric CKYC Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: fixed shell — 60px top nav, 252px sidebar, main canvas scrolls on its own.
+   Decentro dashboard system: white-first, black primary, slate structure, 10px radius (6px for chips/rows).
+   Deliberately light-only: the production dashboard ships one theme. */
+:root{
+  color-scheme: light;
+  --background:#ffffff;
+  --canvas:#f8fafc;
+  --foreground:#1c2024;
+  --strong:#334155;
+  --subtle:#475569;
+  --muted-foreground:#94a3b8;
+  --secondary:#f1f5f9;
+  --hover:#f9fafb;
+  --border:#e2e8f0;
+  --border-strong:#cbd5e1;
+  --primary:#000000;
+  --primary-foreground:#ffffff;
+  --ring:#000000;
+  --disabled-bg:#e2e8f0;
+  --disabled-fg:#94a3b8;
+
+  --ok-bg:#dcfce7; --ok-fg:#166534; --ok-bd:#bbf7d0;
+  --bad-bg:#fee2e2; --bad-fg:#991b1b; --bad-bd:#fecaca;
+  --warn-bg:#fef9c3; --warn-fg:#854d0e; --warn-bd:#fef08a;
+  --info-bg:#dbeafe; --info-fg:#1e40af; --info-bd:#bfdbfe;
+  --tip-bg:#fffbeb;
+
+  --c-green:#10b981; --c-blue:#3b82f6; --c-amber:#f59e0b; --c-red:#ef4444; --c-purple:#8b5cf6;
+
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'Roboto Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --radius:10px; --radius-sm:6px;
+  --nav-h:60px; --side-w:252px;
+  --shadow-pop:0 12px 32px rgba(15,23,42,.12),0 2px 6px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--background);color:var(--foreground);font-family:var(--font);font-size:14px;line-height:1.5;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{color:inherit}
+.ico{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ico-sm{width:14px;height:14px}
+.ico-lg{width:20px;height:20px}
+.mono{font-family:var(--mono);font-size:12.5px;letter-spacing:.01em}
+.tnum{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Shell ---------- */
+.app{height:100%;display:grid;grid-template-rows:var(--nav-h) minmax(0,1fr);grid-template-columns:var(--side-w) minmax(0,1fr);grid-template-areas:"nav nav" "side main"}
+.topnav{grid-area:nav;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--background);z-index:20}
+.brand{display:flex;align-items:center;gap:10px;min-width:calc(var(--side-w) - 40px);text-decoration:none}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:#fff}
+.brand-mark svg{width:16px;height:16px}
+.brand-word{font-weight:700;font-size:15px;letter-spacing:.22em}
+.brand-prod{font-size:11px;font-weight:600;color:var(--subtle);background:var(--secondary);border-radius:var(--radius-sm);padding:2px 7px;letter-spacing:.02em}
+.cmdk{flex:1;max-width:440px;height:38px;display:flex;align-items:center;gap:10px;padding:0 10px 0 12px;border:1px solid var(--border);border-radius:var(--radius);color:var(--muted-foreground);background:var(--background);font-size:13px;text-align:left}
+.cmdk:hover{border-color:var(--border-strong)}
+.cmdk span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+kbd{font-family:var(--font);font-size:11px;font-weight:600;color:var(--subtle);background:var(--secondary);border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.icon-btn{width:38px;height:38px;border-radius:var(--radius);display:grid;place-items:center;color:var(--strong);position:relative;border:1px solid transparent}
+.icon-btn:hover{background:var(--secondary)}
+.icon-btn .dot{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--c-red);border:2px solid var(--background)}
+.user-btn{display:flex;align-items:center;gap:10px;padding:4px 8px 4px 4px;border-radius:var(--radius)}
+.user-btn:hover{background:var(--secondary)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--secondary);color:var(--subtle);display:grid;place-items:center;font-weight:700;font-size:12px}
+.user-name{font-size:13px;font-weight:600;color:var(--strong)}
+.menu-toggle{display:none}
+
+.sidebar{grid-area:side;border-right:1px solid var(--border);background:var(--background);display:flex;flex-direction:column;overflow-y:auto;padding:16px 12px}
+.side-group{display:flex;flex-direction:column;gap:2px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--secondary)}
+.side-group:last-of-type{border-bottom:0}
+.side-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-foreground);padding:6px 12px 6px}
+.nav-item{height:42px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;color:var(--foreground);text-decoration:none;border-left:4px solid transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--secondary)}
+.nav-item[aria-current="page"]{background:var(--secondary);border-left-color:var(--primary);font-weight:600}
+.nav-item .chev{margin-left:auto;color:var(--muted-foreground);transition:transform .2s}
+.nav-item[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+.nav-sub{display:flex;flex-direction:column;gap:2px}
+.nav-sub .nav-item{padding-left:43px;height:38px;font-size:13.5px;color:var(--subtle)}
+.nav-sub .nav-item[aria-current="page"]{color:var(--foreground)}
+.nav-count{margin-left:auto;font-size:11px;font-weight:700;background:var(--background);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 6px;color:var(--subtle)}
+.side-foot{margin-top:auto;padding-top:12px}
+.side-foot .nav-item{font-size:13px;color:var(--subtle);height:38px}
+
+.main{grid-area:main;overflow-y:auto;background:var(--canvas);scroll-behavior:smooth}
+.page{max-width:1320px;margin:0 auto;padding:24px 28px 48px;display:flex;flex-direction:column;gap:20px}
+.view[hidden]{display:none!important}
+
+/* ---------- Page header ---------- */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-head h1{font-size:24px;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.page-head p{margin:4px 0 0;color:var(--subtle);font-size:14px}
+.head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.crumbs{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--subtle);margin-bottom:8px}
+.crumbs button{color:var(--subtle);font-weight:500}
+.crumbs button:hover{color:var(--foreground);text-decoration:underline}
+.crumbs .ico{width:14px;height:14px;color:var(--muted-foreground)}
+
+/* ---------- Buttons ---------- */
+.btn{height:40px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;border-radius:var(--radius);font-size:13px;font-weight:600;white-space:nowrap;border:1px solid transparent;transition:background .15s,border-color .15s,color .15s}
+.btn-primary{background:var(--primary);color:var(--primary-foreground)}
+.btn-primary:hover{background:#1f2937}
+.btn-outline{background:var(--background);border-color:var(--border);color:var(--foreground)}
+.btn-outline:hover{background:var(--hover);border-color:var(--border-strong)}
+.btn-secondary{background:var(--secondary);color:var(--subtle)}
+.btn-secondary:hover{color:var(--foreground)}
+.btn-ghost{color:var(--subtle)}
+.btn-ghost:hover{background:var(--secondary);color:var(--foreground)}
+.btn-sm{height:32px;padding:0 10px;font-size:12px}
+.btn-block{width:100%;height:44px}
+.btn:disabled,.btn[aria-disabled="true"]{background:var(--disabled-bg);color:var(--disabled-fg);border-color:transparent;cursor:not-allowed}
+.btn .count{background:rgba(255,255,255,.18);border-radius:5px;padding:0 6px;font-size:11px}
+.btn:disabled .count{background:transparent}
+.link-btn{font-size:13px;font-weight:600;color:var(--foreground);display:inline-flex;gap:6px;align-items:center}
+.link-btn:hover{text-decoration:underline}
+.btn-group{display:inline-flex;background:var(--secondary);border-radius:var(--radius);padding:3px;gap:2px}
+.btn-group button{height:34px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--subtle)}
+.btn-group button[aria-pressed="true"]{background:var(--background);color:var(--foreground);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.spinner{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Cards ---------- */
+.card{background:var(--background);border:1px solid var(--border);border-radius:var(--radius);min-width:0}
+.card-head{background:var(--secondary);border-bottom:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;min-height:62px;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card-title{font-size:16px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
+.card-sub{font-size:12.5px;color:var(--subtle);margin:2px 0 0}
+.card-body{padding:22px}
+.badge-count{font-size:11px;font-weight:700;color:var(--subtle);background:var(--background);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1px 7px}
+
+/* ---------- KPI ---------- */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:0}
+.kpi{padding:20px 22px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:left;min-width:0;position:relative}
+.kpi:nth-child(4n){border-right:0}
+.kpi:nth-last-child(-n+4){border-bottom:0}
+button.kpi:hover{background:var(--hover)}
+button.kpi:hover .kpi-go{opacity:1}
+.kpi-label{font-size:12px;font-weight:600;color:var(--subtle);display:flex;align-items:center;gap:8px}
+.kpi-label i{width:8px;height:8px;border-radius:2px;flex:none}
+.kpi-value{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.kpi-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted-foreground)}
+.kpi-go{position:absolute;top:18px;right:18px;opacity:0;transition:opacity .15s;color:var(--subtle)}
+.meter{height:4px;border-radius:4px;background:var(--secondary);overflow:hidden}
+.meter span{display:block;height:100%;border-radius:4px;transition:width .5s ease}
+.kpi-donut{flex-direction:row;align-items:center;gap:16px}
+.donut-text{display:flex;flex-direction:column;gap:6px}
+
+/* ---------- Badges ---------- */
+.badge{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;border:1px solid;white-space:nowrap;line-height:1}
+.b-ok{background:var(--ok-bg);color:var(--ok-fg);border-color:var(--ok-bd)}
+.b-bad{background:var(--bad-bg);color:var(--bad-fg);border-color:var(--bad-bd)}
+.b-warn{background:var(--warn-bg);color:var(--warn-fg);border-color:var(--warn-bd)}
+.b-info{background:var(--info-bg);color:var(--info-fg);border-color:var(--info-bd)}
+.b-neutral{background:var(--secondary);color:#64748b;border-color:var(--border)}
+.b-stage{background:var(--background);color:var(--strong);border-color:var(--border);font-family:var(--mono);font-weight:500;font-size:11px}
+.pct{font-size:11px;font-weight:700;padding:2px 7px;border-radius:var(--radius-sm);background:var(--secondary);color:var(--strong)}
+
+/* ---------- Drop-off ---------- */
+.stages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.stage{border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;flex-direction:column;gap:8px;position:relative;min-width:0}
+.stage.worst{border-color:var(--primary);box-shadow:0 0 0 2px rgba(0,0,0,.05)}
+.stage-route{font-size:12.5px;font-weight:600;color:var(--subtle);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stage-route .ico{width:13px;height:13px;color:var(--muted-foreground)}
+.stage-num{font-size:26px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:baseline;gap:8px}
+.stage-num small{font-size:12px;font-weight:600;color:var(--bad-fg)}
+.stage-cap{font-size:12px;color:var(--muted-foreground);display:flex;justify-content:space-between;gap:8px}
+.worst-tag{position:absolute;top:14px;right:14px}
+.legend{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px 28px;padding:14px 18px;background:var(--canvas);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--subtle)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:9px;height:9px;border-radius:50%}
+.legend b{color:var(--foreground);font-variant-numeric:tabular-nums}
+.skeleton{background:linear-gradient(90deg,var(--secondary) 0%,#e9eef4 50%,var(--secondary) 100%);background-size:200% 100%;animation:shimmer 1.1s linear infinite;border-radius:var(--radius-sm);color:transparent!important}
+.skeleton *{visibility:hidden}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+/* ---------- Toolbar + inputs ---------- */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.input-group{position:relative;flex:1 1 260px;min-width:0}
+.input-group .ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted-foreground);pointer-events:none}
+.input{width:100%;height:40px;border:1px solid var(--border);border-radius:var(--radius);padding:0 12px;font-size:14px;background:var(--background);outline:none;transition:border-color .15s,box-shadow .15s}
+.input-group .input{padding-left:36px}
+.input::placeholder{color:var(--muted-foreground)}
+.input:focus{border-color:var(--ring);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.input.is-ok{border-color:var(--ok-fg)}
+.input.is-bad{border-color:var(--bad-fg);box-shadow:0 0 0 3px rgba(153,27,27,.08)}
+.input-lg{height:48px;font-size:16px;letter-spacing:.04em}
+.select-btn{height:40px;display:inline-flex;align-items:center;gap:6px;padding:0 10px 0 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--background);white-space:nowrap}
+.select-btn:hover{border-color:var(--border-strong)}
+.select-btn .k{color:var(--muted-foreground)}
+.select-btn .v{font-weight:600}
+.select-btn .ico{color:var(--muted-foreground)}
+.select-btn.on{border-color:var(--primary)}
+.filter-count{background:var(--primary);color:#fff;border-radius:5px;font-size:11px;padding:0 6px;font-weight:700}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.field-label{font-size:12px;font-weight:600;color:var(--subtle)}
+.req{color:var(--bad-fg)}
+.hint{font-size:12px;color:var(--muted-foreground);display:flex;align-items:center;gap:6px;min-height:18px}
+.hint:empty{display:none}
+.hint.ok{color:var(--ok-fg)}
+.hint.bad{color:var(--bad-fg)}
+
+/* ---------- Chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12.5px;font-weight:500;background:var(--background);color:var(--strong)}
+.chip:hover{border-color:var(--border-strong)}
+.chip[aria-pressed="true"]{background:var(--primary);color:#fff;border-color:var(--primary)}
+.chip .ico{width:13px;height:13px}
+.active-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 16px}
+.active-filters .lbl{font-size:12px;font-weight:600;color:var(--muted-foreground)}
+.fchip{height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 6px 0 10px;border-radius:var(--radius-sm);background:var(--secondary);font-size:12px;font-weight:600;color:var(--strong)}
+.fchip button{width:18px;height:18px;border-radius:4px;display:grid;place-items:center;color:var(--subtle)}
+.fchip button:hover{background:var(--border);color:var(--foreground)}
+
+/* ---------- Table ---------- */
+.table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:860px}
+thead th{background:var(--secondary);font-size:12px;font-weight:700;color:var(--subtle);text-align:left;padding:0 14px;height:42px;white-space:nowrap}
+tbody td{height:52px;padding:6px 14px;border-top:1px solid var(--border);font-size:13px;font-weight:500;color:var(--foreground);vertical-align:middle}
+tbody tr{transition:background .12s}
+tbody tr.clickable{cursor:pointer}
+tbody tr:hover{background:var(--hover)}
+tbody tr.sel{background:#f8fafc}
+tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--primary)}
+tbody tr.new-row{animation:flash 2.4s ease}
+@keyframes flash{0%,40%{background:var(--ok-bg)}100%{background:transparent}}
+td.muted{color:var(--subtle);font-weight:400}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.urn{display:inline-flex;align-items:center;gap:6px}
+.copy-btn{width:24px;height:24px;border-radius:5px;display:inline-grid;place-items:center;color:var(--muted-foreground);opacity:0}
+tr:hover .copy-btn,.copy-btn:focus-visible{opacity:1}
+.copy-btn:hover{background:var(--secondary);color:var(--foreground)}
+.cb{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border-strong);background:var(--background);display:inline-grid;place-items:center;color:#fff;flex:none;vertical-align:middle}
+.cb svg{width:12px;height:12px;stroke-width:3;opacity:0}
+.cb[aria-checked="true"],.cb[aria-checked="mixed"]{background:var(--primary);border-color:var(--primary)}
+.cb[aria-checked="true"] .i-check{opacity:1}
+.cb[aria-checked="mixed"] .i-mixed{opacity:1}
+.cb .i-mixed{position:absolute}
+.cb{position:relative}
+.cb:disabled{background:var(--secondary);border-color:var(--border);cursor:not-allowed}
+.table-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--subtle)}
+.pager{display:flex;gap:6px}
+.pager button{min-width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--background);font-size:13px;font-weight:600;color:var(--strong);padding:0 8px}
+.pager button:hover:not(:disabled){border-color:var(--border-strong)}
+.pager button[aria-current="page"]{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pager button:disabled{color:var(--disabled-fg);cursor:not-allowed}
+.sel-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--foreground);color:#fff;border-radius:var(--radius);padding:10px 12px 10px 16px;margin-bottom:16px;font-size:13px}
+.sel-bar b{font-weight:600}
+.sel-bar .sp{flex:1}
+.sel-bar .note{color:#cbd5e1;font-size:12px}
+.sel-bar button{color:#fff;font-weight:600;font-size:12.5px;display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:8px}
+.sel-bar button:hover{background:rgba(255,255,255,.12)}
+
+/* ---------- Empty ---------- */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:48px 20px}
+.empty .ico{width:40px;height:40px;color:var(--border-strong);stroke-width:1.5}
+.empty h3{margin:6px 0 0;font-size:15px}
+.empty p{margin:0;color:var(--subtle);font-size:13px;max-width:44ch}
+.empty .head-actions{margin-top:10px;justify-content:center}
+td .empty{position:sticky;left:0}
+
+/* ---------- Search flow ---------- */
+.stepper{display:flex;align-items:center;gap:12px;padding:14px 22px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--muted-foreground)}
+.step-dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--secondary);border:1px solid var(--border);color:var(--muted-foreground)}
+.step.active{color:var(--foreground);font-weight:700}
+.step.active .step-dot{background:var(--primary);border-color:var(--primary);color:#fff}
+.step.done{color:var(--foreground)}
+.step.done .step-dot{background:var(--primary);border-color:var(--primary);color:#fff}
+.step-dot .ico{width:12px;height:12px;stroke-width:3}
+.step-line{flex:0 1 48px;height:1px;background:var(--border)}
+.stepper .pctxt{margin-left:auto;font-size:12px;font-weight:600;color:var(--subtle)}
+.progress-fill{height:3px;background:var(--secondary);border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
+.progress-fill span{display:block;height:100%;background:var(--primary);transition:width .3s ease}
+.flow-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.guide{position:sticky;top:0;display:flex;flex-direction:column;gap:16px}
+.id-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.id-tile{border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:10px;text-align:left;position:relative;min-width:0;transition:border-color .15s,background .15s}
+.id-tile:hover{border-color:var(--border-strong)}
+.id-tile[aria-checked="true"]{border-color:var(--primary);background:#f8fafc;box-shadow:0 0 0 2px rgba(0,0,0,.07)}
+.id-icon{width:36px;height:36px;border-radius:8px;background:var(--secondary);display:grid;place-items:center;color:var(--strong)}
+.id-icon .ico{width:18px;height:18px}
+.id-tile b{font-size:14px;font-weight:600}
+.id-tile small{font-size:12px;color:var(--subtle);display:block;margin-top:2px}
+.radio{position:absolute;top:16px;right:16px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border-strong)}
+[aria-checked="true"] > .radio{border:5px solid var(--primary)}
+.card-foot{border-top:1px solid var(--border);padding:14px 22px;display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.card-foot .left{margin-right:auto;font-size:12.5px;color:var(--subtle)}
+.picked{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--canvas)}
+.picked b{font-size:14px}
+.picked small{display:block;font-size:12px;color:var(--subtle)}
+.picked .btn{margin-left:auto}
+.form-stack{display:flex;flex-direction:column;gap:18px}
+.check-row{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--strong);cursor:pointer}
+.check-row .cb{margin-top:1px}
+.samples{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:var(--muted-foreground)}
+.samples button{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:var(--radius-sm);border:1px dashed var(--border-strong);color:var(--strong)}
+.samples button:hover{border-style:solid;border-color:var(--primary)}
+.trace{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--canvas)}
+.trace div{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted-foreground)}
+.trace div.done{color:var(--foreground)}
+.trace div.run{color:var(--foreground);font-weight:600}
+.trace .ico{color:var(--ok-fg)}
+.trace .pend{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border-strong)}
+.result-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.result-top .sp{flex:1}
+.meta-strip{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--canvas);font-family:var(--mono);font-size:12px;color:var(--subtle)}
+.meta-strip b{color:var(--foreground);font-weight:500}
+.meta-strip .copy-btn{opacity:1;margin-left:auto}
+.record{display:grid;grid-template-columns:168px minmax(0,1fr);gap:28px;align-items:start}
+.photo{display:flex;flex-direction:column;gap:8px;align-items:center}
+.photo svg{width:168px;height:204px;border-radius:var(--radius);display:block}
+.photo small{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--muted-foreground)}
+.dl-section{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted-foreground);text-transform:uppercase;padding:2px 0 6px}
+.dl-section + .drow{border-top:0}
+.drow{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.drow dt{color:var(--subtle)}
+.drow dd{margin:0;font-weight:600;text-align:right}
+dl{margin:0}
+.dl-gap{height:16px}
+.docs{display:flex;flex-wrap:wrap;gap:8px}
+.doc{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 6px 0 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--radius);border:1px solid;font-size:13px}
+.alert .ico{margin-top:2px}
+.alert-ok{background:#f0fdf4;border-color:var(--ok-bd);color:var(--ok-fg)}
+.alert-warn{background:var(--tip-bg);border-color:var(--warn-bd);color:var(--warn-fg)}
+.alert-bad{background:#fef2f2;border-color:var(--bad-bd);color:var(--bad-fg)}
+.alert b{display:block;margin-bottom:2px}
+.guide-list{display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--strong)}
+.guide-list div{display:flex;gap:10px}
+.guide-list .ico{color:var(--muted-foreground);margin-top:3px}
+.guide .card-body{display:flex;flex-direction:column;gap:16px}
+.prog{display:flex;flex-direction:column;gap:10px;font-size:13px}
+.prog div{display:flex;align-items:center;gap:10px;color:var(--muted-foreground)}
+.prog .done{color:var(--foreground)}
+.prog .done i{background:var(--ok-fg);border-color:var(--ok-fg)}
+.prog .now{color:var(--foreground);font-weight:700}
+.prog .now i{background:var(--primary);border-color:var(--primary)}
+.prog i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--border-strong)}
+.fmt{font-family:var(--mono);font-size:13px;background:var(--secondary);border-radius:var(--radius-sm);padding:8px 10px;color:var(--foreground)}
+
+/* ---------- Overlays ---------- */
+.pop{position:fixed;z-index:60;max-height:calc(100vh - 24px);overflow-y:auto;background:var(--background);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-pop);min-width:220px;max-width:calc(100vw - 24px);animation:popin .14s ease}
+@keyframes popin{from{opacity:0;transform:translateY(-4px)}}
+.menu{padding:6px;display:flex;flex-direction:column}
+.menu button{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:var(--radius-sm);font-size:13px;text-align:left;color:var(--strong)}
+.menu button:hover,.menu button:focus-visible{background:var(--secondary);outline:none}
+.menu button .tick{margin-left:auto;opacity:0}
+.menu button[aria-checked="true"] .tick{opacity:1}
+.menu hr{border:0;border-top:1px solid var(--border);margin:6px 0}
+.menu .menu-h{padding:6px 10px;font-size:12px;color:var(--muted-foreground)}
+.pop-panel{width:400px;padding:18px;display:flex;flex-direction:column;gap:18px}
+.pop-head{display:flex;align-items:center;justify-content:space-between}
+.pop-head h3{margin:0;font-size:15px}
+.pop-sec{display:flex;flex-direction:column;gap:10px}
+.pop-sec h4{margin:0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground)}
+.date-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.date-pair .input{font-size:13px}
+.pop-foot{display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--border)}
+.notif{width:340px}
+.notif-item{display:flex;gap:10px;padding:10px;border-radius:var(--radius-sm);font-size:13px}
+.notif-item:hover{background:var(--secondary)}
+.notif-item small{display:block;color:var(--muted-foreground);font-size:12px;margin-top:2px}
+.notif-item i{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}
+
+.scrim{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:70;display:grid;place-items:center;padding:16px;animation:fade .15s ease}
+@keyframes fade{from{opacity:0}}
+.dialog{background:var(--background);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:560px;max-height:calc(100% - 32px);display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(15,23,42,.22);animation:rise .18s ease}
+@keyframes rise{from{opacity:0;transform:translateY(8px) scale(.99)}}
+.dialog-head{padding:20px 22px 16px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--border)}
+.dialog-head h2{margin:0;font-size:16px;font-weight:700}
+.dialog-head p{margin:4px 0 0;font-size:13px;color:var(--subtle)}
+.dialog-head .icon-btn{margin-left:auto;margin-top:-6px;margin-right:-8px}
+.dialog-body{padding:20px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.dialog-foot{padding:14px 22px;border-top:1px solid var(--border);background:var(--canvas);border-radius:0 0 var(--radius) var(--radius);display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.dialog-foot .left{margin-right:auto;font-size:12.5px;color:var(--subtle)}
+.opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--radius);text-align:left;width:100%;position:relative}
+.opt:hover{border-color:var(--border-strong)}
+.opt[aria-checked="true"]{border-color:var(--primary);background:#f8fafc}
+.opt .radio{position:static;flex:none}
+.opt .id-icon{width:34px;height:34px}
+.opt b{font-size:14px;display:block}
+.opt small{font-size:12.5px;color:var(--subtle)}
+.opt .size{margin-left:auto;font-size:12px;color:var(--muted-foreground);white-space:nowrap}
+pre.preview{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;background:var(--canvas);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;overflow:auto;max-height:340px;white-space:pre;color:var(--strong)}
+
+.sheet-scrim{place-items:stretch;justify-items:end;padding:0}
+.sheet{width:min(460px,100%);height:100%;background:var(--background);border-left:1px solid var(--border);display:flex;flex-direction:column;animation:slide .2s ease}
+@keyframes slide{from{transform:translateX(24px);opacity:.4}}
+.sheet .dialog-body{flex:1}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl{display:grid;grid-template-columns:20px 1fr;gap:12px;padding-bottom:16px;position:relative}
+.tl::before{content:"";position:absolute;left:9px;top:20px;bottom:0;width:1px;background:var(--border)}
+.tl:last-child::before{display:none}
+.tl i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--secondary);border:1px solid var(--border)}
+.tl.ok i{background:var(--primary);border-color:var(--primary);color:#fff}
+.tl.bad i{background:var(--bad-fg);border-color:var(--bad-fg);color:#fff}
+.tl.run i{background:var(--background);border:2px solid var(--primary)}
+.tl i .ico{width:11px;height:11px;stroke-width:3}
+.tl b{font-size:13px;display:block;font-family:var(--mono);font-weight:500}
+.tl small{font-size:12px;color:var(--subtle)}
+
+.cmd{max-width:580px;align-self:start;margin-top:10vh}
+.cmd-input{display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--border)}
+.cmd-input input{flex:1;height:52px;border:0;outline:none;font-size:15px;background:transparent}
+.cmd-list{max-height:360px;overflow-y:auto;padding:8px}
+.cmd-h{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-foreground);padding:8px 10px 4px}
+.cmd-item{display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 10px;border-radius:var(--radius-sm);font-size:13.5px;text-align:left;color:var(--strong)}
+.cmd-item[aria-selected="true"]{background:var(--secondary);color:var(--foreground)}
+.cmd-item .r{margin-left:auto;font-size:12px;color:var(--muted-foreground)}
+.cmd-empty{padding:28px;text-align:center;color:var(--subtle);font-size:13px}
+
+.toasts{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:90;display:flex;flex-direction:column;gap:10px;width:min(380px,calc(100vw - 32px))}
+.toast{background:var(--background);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-pop);padding:14px;display:flex;gap:12px;align-items:flex-start;animation:rise .2s ease}
+.toast .t-ico{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:none}
+.toast.ok .t-ico{background:var(--ok-bg);color:var(--ok-fg)}
+.toast.info .t-ico{background:var(--secondary);color:var(--strong)}
+.toast.bad{background:#991b1b;border-color:#991b1b;color:#fff}
+.toast.bad .t-ico{background:rgba(255,255,255,.15);color:#fff}
+.toast b{font-size:13.5px;display:block}
+.toast small{display:block;font-size:12.5px;color:var(--subtle);margin-top:2px;word-break:break-word}
+.toast.bad small{color:#fecaca}
+.toast .t-body{flex:1;min-width:0}
+.toast .t-act{margin-top:8px}
+.toast .icon-btn{width:26px;height:26px;margin:-4px -4px 0 0;color:var(--muted-foreground)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1180px){
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{border-right:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important}
+  .kpi:nth-child(2n){border-right:0!important}
+  .kpi:nth-last-child(-n+2){border-bottom:0!important}
+  .stages{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flow-grid{grid-template-columns:minmax(0,1fr)}
+  .guide{position:static}
+}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-areas:"nav" "main"}
+  .menu-toggle{display:grid}
+  .sidebar{position:fixed;top:var(--nav-h);bottom:0;left:0;width:280px;z-index:40;transform:translateX(-100%);transition:transform .2s ease;box-shadow:var(--shadow-pop)}
+  .app.side-open .sidebar{transform:none}
+  .side-scrim{position:fixed;inset:var(--nav-h) 0 0 0;background:rgba(15,23,42,.3);z-index:35}
+  .brand{min-width:0}
+  .cmdk span{display:none}
+  .cmdk{flex:0 0 38px;width:38px;padding:0;justify-content:center}
+  .cmdk kbd{display:none}
+  .user-name{display:none}
+  .page{padding:20px 16px 40px}
+  .id-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .topnav{gap:8px;padding:0 12px}
+  .brand-prod{display:none}
+  .page-head h1{font-size:21px}
+  .card-head{padding:12px 16px}
+  .card-body{padding:16px}
+  .kpi{padding:16px}
+  .kpi-value{font-size:24px}
+  .kpi-donut{flex-direction:column;align-items:flex-start;gap:10px}
+  .stages{grid-template-columns:minmax(0,1fr)}
+  .record{grid-template-columns:minmax(0,1fr)}
+  .photo{flex-direction:row;align-items:flex-end}
+  .photo svg{width:96px;height:116px}
+  .id-grid{grid-template-columns:minmax(0,1fr)}
+  td .empty{max-width:calc(100vw - 70px);padding:32px 8px}
+  .toolbar > *{flex:1 1 auto}
+  .input-group{flex-basis:100%}
+  .pop{left:8px!important;right:8px!important;width:auto!important}
+  .pop-panel{width:auto}
+  .card-foot{flex-wrap:wrap}
+  .card-foot .btn{flex:1}
+  .dialog-foot{flex-wrap:wrap}
+  .dialog-foot .left{flex-basis:100%}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<!-- ============================================================
+  @dev  Fabric · CKYC Dashboard — interactive prototype
+  Source design: Figma "Fabric – CKYC Dashboard" (13 frames: Overview, CKYC Search A-flow,
+  Download B-flow). Rebuilt in the Decentro dashboard design system (shadcn/ui tokens,
+  black primary, 10px radius). All data is mock and seeded; dates/times are pinned to IST.
+  Brand: wordmark is typographic — swap .brand for the <symbol id="decentro-logo"> used in
+  the other UI Demos files before sharing externally.
+============================================================= -->
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+  <symbol id="i-idcard" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4M14 14h4M5.5 16.5c.6-1 1.5-1.5 2.5-1.5s1.9.5 2.5 1.5"/></symbol>
+  <symbol id="i-finger" viewBox="0 0 24 24"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></symbol>
+  <symbol id="i-vote" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-csv" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h8M8 17h8M8 9h2"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 9v12M15 9v12"/></symbol>
+  <symbol id="i-zip" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-searchx" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="m13.5 8.5-5 5M8.5 8.5l5 5"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M22 17 13.5 8.5 8.5 13.5 2 7"/><path d="M16 17h6v-6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+</svg>
+
+<div class="app" id="app">
+  <!-- @dev Top nav · shadcn: Button (ghost), Command trigger, Avatar, DropdownMenu, Popover -->
+  <header class="topnav">
+    <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Open navigation"><svg class="ico ico-lg"><use href="#i-menu"/></svg></button>
+    <a class="brand" href="#overview" data-go="overview" aria-label="Decentro Fabric home">
+      <span class="brand-mark"><svg class="ico"><use href="#i-layers"/></svg></span>
+      <span class="brand-word">DECENTRO</span>
+      <span class="brand-prod">Fabric</span>
+    </a>
+    <button class="cmdk" id="cmdkBtn" aria-label="Search pages, records and actions">
+      <svg class="ico"><use href="#i-search"/></svg><span>Search URNs, pages and actions</span><kbd id="kbdHint">⌘K</kbd>
+    </button>
+    <div class="nav-right">
+      <button class="icon-btn" id="bellBtn" aria-label="Notifications" aria-haspopup="true"><svg class="ico ico-lg"><use href="#i-bell"/></svg><span class="dot" id="bellDot"></span></button>
+      <button class="user-btn" id="userBtn" aria-haspopup="true" aria-label="Account menu">
+        <span class="avatar">KG</span><span class="user-name">Kushal Gambhir</span><svg class="ico" style="color:var(--muted-foreground)"><use href="#i-chev-d"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- @dev Sidebar · shadcn: Sidebar, SidebarGroup, SidebarMenuButton (isActive), Collapsible -->
+  <nav class="sidebar" id="sidebar" aria-label="Fabric">
+    <div class="side-group">
+      <div class="side-label">Analytics</div>
+      <a class="nav-item" href="#overview" data-go="overview"><svg class="ico ico-lg"><use href="#i-grid"/></svg>Overview</a>
+    </div>
+    <div class="side-group">
+      <div class="side-label">CKYC</div>
+      <button class="nav-item" id="uploadToggle" aria-expanded="false" aria-controls="uploadSub"><svg class="ico ico-lg"><use href="#i-upload"/></svg>Upload<svg class="ico chev"><use href="#i-chev-d"/></svg></button>
+      <div class="nav-sub" id="uploadSub" hidden>
+        <a class="nav-item" href="#upload-overview" data-go="upload-overview">Overview</a>
+        <a class="nav-item" href="#upload-patterns" data-go="upload-patterns">Patterns</a>
+      </div>
+      <a class="nav-item" href="#search" data-go="search"><svg class="ico ico-lg"><use href="#i-search"/></svg>Search</a>
+      <a class="nav-item" href="#download" data-go="download"><svg class="ico ico-lg"><use href="#i-download"/></svg>Download<span class="nav-count tnum" id="readyCount" title="Records ready to download">0</span></a>
+    </div>
+    <div class="side-foot">
+      <div class="side-label">Support</div>
+      <a class="nav-item" href="https://docs.decentro.tech" target="_blank" rel="noopener"><svg class="ico"><use href="#i-book"/></svg>API documentation<svg class="ico ico-sm chev"><use href="#i-ext"/></svg></a>
+      <button class="nav-item" data-act="support"><svg class="ico"><use href="#i-chat"/></svg>Contact support</button>
+    </div>
+  </nav>
+
+  <main class="main" id="main">
+    <div class="page">
+
+      <!-- =====================================================
+        @dev VIEW: Overview (Figma 01)
+        shadcn: ButtonGroup (Daily/Weekly/Custom), Popover+Calendar (custom range), Card, Skeleton
+        States: loaded · refreshing (skeleton 700ms) · custom range
+        Data: funnel counts per range. Rates are share of TOTAL RECORDS in range.
+        API: analytics summary endpoint (counts by stage) — one call per range change.
+      ====================================================== -->
+      <section class="view" id="view-overview" aria-labelledby="ov-h">
+        <div class="page-head">
+          <div>
+            <h1 id="ov-h">Overview</h1>
+            <p id="ovRangeText">CKYC funnel for today</p>
+          </div>
+          <div class="head-actions">
+            <div class="btn-group" role="group" aria-label="Range">
+              <button aria-pressed="true" data-range="daily">Daily</button>
+              <button aria-pressed="false" data-range="weekly">Weekly</button>
+              <button aria-pressed="false" data-range="custom" id="customRangeBtn">Custom</button>
+            </div>
+            <button class="btn btn-outline" id="ovRefresh"><svg class="ico"><use href="#i-refresh"/></svg>Refresh</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:20px">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Record funnel</h2>
+              <p class="card-sub" id="ovUpdated">Updated just now</p>
+            </div>
+            <button class="btn btn-primary" data-go="search"><svg class="ico"><use href="#i-search"/></svg>View search records</button>
+          </div>
+          <div class="kpi-grid" id="kpiGrid"></div>
+        </div>
+
+        <div class="card" style="margin-top:20px">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Stage drop-off analysis</h2>
+              <p class="card-sub">Records lost between consecutive stages</p>
+            </div>
+            <button class="btn btn-outline btn-sm" data-go="download">View download queue<svg class="ico"><use href="#i-chev-r"/></svg></button>
+          </div>
+          <div class="card-body">
+            <div class="stages" id="stages"></div>
+            <div class="legend" id="legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+        @dev VIEW: CKYC Search — list (Figma 02)
+        shadcn: Card, InputGroup, Popover (date range), DropdownMenu (status), DataTable, Badge, Sheet (row detail), Empty
+        States: default · filtered · no results · refreshing
+        Behaviour: URN search is client-side contains-match; row click opens detail sheet.
+      ====================================================== -->
+      <section class="view" id="view-search" hidden aria-labelledby="se-h">
+        <div class="page-head">
+          <div>
+            <h1 id="se-h">CKYC Search</h1>
+            <p>Search and retrieve CKYC records by OVD ID</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-primary" data-act="new-search"><svg class="ico"><use href="#i-search"/></svg>Search record</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <div class="card-head">
+            <h2 class="card-title">Search history <span class="badge-count tnum" id="seCount">0</span></h2>
+            <button class="btn btn-ghost btn-sm" id="seRefresh"><svg class="ico"><use href="#i-refresh"/></svg>Refresh table</button>
+          </div>
+          <div class="card-body">
+            <div class="toolbar">
+              <label class="input-group"><span class="sr">Search by processing URN</span><svg class="ico"><use href="#i-search"/></svg><input class="input" id="seQ" placeholder="Search by processing URN" autocomplete="off"></label>
+              <button class="select-btn" id="seDateBtn" data-range-for="se"><svg class="ico"><use href="#i-cal"/></svg><span class="v" id="seDateLbl">Last 30 days</span><svg class="ico"><use href="#i-chev-d"/></svg></button>
+              <button class="select-btn" id="seStatusBtn"><span class="k">Status:</span><span class="v" id="seStatusLbl">All</span><svg class="ico"><use href="#i-chev-d"/></svg></button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Processing URN</th><th>Stage</th><th>Created on</th><th>Updated on</th><th>Status</th><th class="num">Coverage</th></tr></thead>
+                <tbody id="seBody"></tbody>
+              </table>
+            </div>
+            <div class="table-foot"><span id="seFoot"></span><div class="pager" id="sePager"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+        @dev VIEW: Search record flow (Figma 03 → 04 → 04b → 04c → 05)
+        Figma draws this as a modal; rebuilt inline per the dashboard rule
+        "type selection is an inline card grid, not a modal" — sidebar stays visible.
+        shadcn: Breadcrumb, RadioGroup (ID tiles), Field+Input, Checkbox (Aadhaar consent), Button+Spinner, Alert
+        Step 1 Select ID → Step 2 Enter details (live format validation) → Step 3 Result
+        Result states: found · not found · registry error (retry)
+        Validation (client, pre-call): PAN ^[A-Z]{5}[0-9]{4}[A-Z]$ · Aadhaar ^[2-9]\d{11}$ + consent ·
+          DL ^[A-Z]{2}\d{13}$ · Passport ^[A-Z]\d{7}$ · Voter ^[A-Z]{3}\d{7}$ · NREGA ^[A-Z]{2}-\d{2}-\d{3}-\d{3}-\d{3}/\d{1,6}$
+        API: CKYC Search — request {id_type, id_number, consent}; response fills TXN/code/key + record.
+        Demo triggers: ID containing 9999 → not found; containing 0000 → registry error.
+      ====================================================== -->
+      <section class="view" id="view-flow" hidden aria-labelledby="fl-h">
+        <div>
+          <nav class="crumbs" aria-label="Breadcrumb"><button data-go="search">CKYC Search</button><svg class="ico"><use href="#i-chev-r"/></svg><span>Search record</span></nav>
+          <div class="page-head">
+            <div><h1 id="fl-h">Search CKYC record</h1><p id="flSub">Select the ID type to search with</p></div>
+            <div class="head-actions"><button class="btn btn-outline" data-go="search">Cancel</button></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <div class="stepper" id="flStepper"></div>
+          <div class="progress-fill"><span id="flFill" style="width:0"></span></div>
+        </div>
+        <div class="flow-grid" style="margin-top:20px">
+          <div class="card" id="flCard"></div>
+          <aside class="guide" id="flGuide" aria-label="Guidance"></aside>
+        </div>
+      </section>
+
+      <!-- =====================================================
+        @dev VIEW: CKYC Download (Figma 06 → 07/08 → 09 → 10 → 11/11b → 12)
+        shadcn: Card, InputGroup, Popover (date range + Filters panel), DropdownMenu (ID type, Status),
+                DataTable w/ row selection (Checkbox tri-state), Dialog (format), RadioGroup, Toast
+        Rules: Processing and Failed rows can't be selected (nothing to export yet).
+               Select-all selects every downloadable row matching the current filters, across pages.
+               Exports mask ID numbers by default (keep last 4).
+        API: CKYC Download (bulk) — request {urns[], format, mask_ids}; CSV/XLSX sync, ZIP async.
+        Prototype builds real files (CSV text, XLSX via SheetJS, ZIP via JSZip) from the mock rows.
+      ====================================================== -->
+      <section class="view" id="view-download" hidden aria-labelledby="dl-h">
+        <div class="page-head">
+          <div>
+            <h1 id="dl-h">CKYC Download</h1>
+            <p>Select records and download CKYC data in bulk</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-primary" id="dlCta" disabled><svg class="ico"><use href="#i-download"/></svg>Download selected <span class="count tnum" id="dlCtaN">0</span></button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <div class="card-head">
+            <h2 class="card-title">Download records <span class="badge-count tnum" id="dlCount">0</span></h2>
+            <button class="btn btn-ghost btn-sm" id="dlRefresh"><svg class="ico"><use href="#i-refresh"/></svg>Refresh table</button>
+          </div>
+          <div class="card-body">
+            <div class="toolbar">
+              <label class="input-group"><span class="sr">Search by URN or ID number</span><svg class="ico"><use href="#i-search"/></svg><input class="input" id="dlQ" placeholder="Search by URN or ID number" autocomplete="off"></label>
+              <button class="select-btn" id="dlDateBtn" data-range-for="dl"><svg class="ico"><use href="#i-cal"/></svg><span class="v" id="dlDateLbl">Last 30 days</span><svg class="ico"><use href="#i-chev-d"/></svg></button>
+              <button class="select-btn" id="dlTypeBtn"><span class="k">ID type:</span><span class="v" id="dlTypeLbl">All</span><svg class="ico"><use href="#i-chev-d"/></svg></button>
+              <button class="select-btn" id="dlStatusBtn"><span class="k">Status:</span><span class="v" id="dlStatusLbl">All</span><svg class="ico"><use href="#i-chev-d"/></svg></button>
+              <button class="select-btn" id="dlFilterBtn"><svg class="ico"><use href="#i-filter"/></svg><span class="v">Filters</span><span class="filter-count" id="dlFilterN" hidden>0</span></button>
+            </div>
+            <div class="active-filters" id="dlActive" hidden></div>
+            <div class="sel-bar" id="dlSelBar" hidden></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th style="width:44px"><button class="cb" id="dlAll" role="checkbox" aria-checked="false" aria-label="Select all downloadable records"><svg class="ico i-check"><use href="#i-check"/></svg><svg class="ico i-mixed" style="opacity:0"><use href="#i-minus"/></svg></button></th>
+                  <th>Processing URN</th><th>ID type</th><th>ID number</th><th>Created on</th><th>Status</th><th class="num">Records</th>
+                </tr></thead>
+                <tbody id="dlBody"></tbody>
+              </table>
+            </div>
+            <div class="table-foot"><span id="dlFoot"></span><div class="pager" id="dlPager"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- @dev VIEW: Upload (not in the Figma file) · shadcn: Empty -->
+      <section class="view" id="view-upload" hidden aria-labelledby="up-h">
+        <div class="page-head"><div><h1 id="up-h">Upload</h1><p id="upSub">Overview</p></div></div>
+        <div class="card" style="margin-top:20px">
+          <div class="empty">
+            <svg class="ico"><use href="#i-upload"/></svg>
+            <h3>Upload screens are designed separately</h3>
+            <p>This prototype covers the Overview, Search and Download flows from the Fabric CKYC file. Bulk upload and pattern rules sit in their own file.</p>
+            <div class="head-actions"><button class="btn btn-outline" data-go="search">Open CKYC Search</button><button class="btn btn-primary" data-go="download">Open CKYC Download</button></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div id="overlays"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+/* ================= Helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const ico = (id, cls = '') => `<svg class="ico ${cls}"><use href="#${id}"/></svg>`;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf = new Intl.NumberFormat('en-IN');
+const IST = 'Asia/Kolkata';
+const ymdF = new Intl.DateTimeFormat('en-CA', {timeZone: IST, year:'numeric', month:'2-digit', day:'2-digit'});
+const dtF = new Intl.DateTimeFormat('en-US', {timeZone: IST, month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true});
+const tF = new Intl.DateTimeFormat('en-US', {timeZone: IST, hour:'numeric', minute:'2-digit', hour12:true});
+const ymd = d => ymdF.format(d);
+const fmtDT = d => dtF.format(d);
+const dayLbl = s => { const [y,m,d] = s.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'numeric'}); };
+const dayLblY = s => { const [y,m,d] = s.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'numeric',year:'numeric'}); };
+const addDays = (s, n) => { const [y,m,d] = s.split('-').map(Number); const t = new Date(Date.UTC(y,m-1,d+n)); return t.toISOString().slice(0,10); };
+const diffDays = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+const NOW = new Date();
+const TODAY = ymd(NOW);
+const fileDate = TODAY.split('-').reverse().join('-'); // DD-MM-YYYY
+
+let seed = 20261012;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const pick = a => a[Math.floor(rnd() * a.length)];
+const hex = n => Array.from({length:n}, () => '0123456789ABCDEF'[Math.floor(rnd()*16)]).join('');
+const alnum = n => Array.from({length:n}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789'[Math.floor(rnd()*34)]).join('');
+const minsAgo = m => new Date(NOW.getTime() - m * 60000);
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+$('#kbdHint').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+async function copyText(text, label = 'Copied') {
+  try { await navigator.clipboard.writeText(text); toast({tone:'info', title: label, desc: text.length > 60 ? text.slice(0,60)+'…' : text}); }
+  catch { toast({tone:'info', title:'Copy not available here', desc:text}); }
+}
+
+/* ================= Reference data ================= */
+const ID = {
+  pan:      {label:'PAN Card', icon:'i-idcard', sub:'10 characters', field:'PAN number', ph:'ABCDE1234F', ex:'ABCDE1234F', max:10,
+             norm:v=>v.toUpperCase().replace(/[^A-Z0-9]/g,''), re:/^[A-Z]{5}[0-9]{4}[A-Z]$/,
+             fmt:'AAAAA 9999 A', err:'PAN is 5 letters, 4 digits, then 1 letter.', samples:['ABCDE1234F','AAAPZ9999Z','ERRPS0000E'],
+             mask:v=>'XXXXXX'+v.slice(-4)},
+  aadhaar:  {label:'Aadhaar Card', icon:'i-finger', sub:'12 digits · consent needed', field:'Aadhaar number', ph:'5821 3390 4821', ex:'5821 3390 4821', max:14,
+             norm:v=>v.replace(/\D/g,'').slice(0,12), show:v=>v.replace(/(\d{4})(?=\d)/g,'$1 '), re:/^[2-9]\d{11}$/,
+             fmt:'9999 9999 9999', err:'Aadhaar is 12 digits and can’t start with 0 or 1.', samples:['582133904821','582199994821','582100004821'], consent:true,
+             mask:v=>'XXXX XXXX '+v.slice(-4)},
+  dl:       {label:'Driving Licence', icon:'i-car', sub:'15 characters', field:'Driving licence number', ph:'MH1220190040921', ex:'MH12 2019 0040921', max:15,
+             norm:v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,15), re:/^[A-Z]{2}\d{13}$/,
+             fmt:'SS RR YYYY 9999999', err:'State code, RTO code, year of issue and 7 digits — 15 characters, no spaces needed.', samples:['MH1220190040921','MH1220199999921','MH1220190000021'],
+             mask:v=>v.slice(0,4)+'XXXXXXX'+v.slice(-4)},
+  passport: {label:'Passport', icon:'i-plane', sub:'8 characters', field:'Passport number', ph:'K8125612', ex:'K8125612', max:8,
+             norm:v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8), re:/^[A-Z]\d{7}$/,
+             fmt:'A 9999999', err:'Passport number is 1 letter followed by 7 digits.', samples:['K8125612','K9999612','K0000612'],
+             mask:v=>'XXXX'+v.slice(-4)},
+  voter:    {label:'Voter ID', icon:'i-vote', sub:'EPIC · 10 characters', field:'EPIC number', ph:'ZTP7317741', ex:'ZTP7317741', max:10,
+             norm:v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10), re:/^[A-Z]{3}\d{7}$/,
+             fmt:'AAA 9999999', err:'EPIC is 3 letters followed by 7 digits.', samples:['ZTP7317741','ZTP9999741','ZTP0000741'],
+             mask:v=>'XXXXXX'+v.slice(-4)},
+  nrega:    {label:'NREGA Card', icon:'i-clip', sub:'Job card number', field:'Job card number', ph:'MH-01-003-001-003/390', ex:'MH-01-003-001-003/390', max:24,
+             norm:v=>v.toUpperCase().replace(/[^A-Z0-9\-\/]/g,'').slice(0,24), re:/^[A-Z]{2}-\d{2}-\d{3}-\d{3}-\d{3}\/\d{1,6}$/,
+             fmt:'SS-99-999-999-999/999', err:'Use the full job card number: state-district-block-panchayat-village/household.', samples:['MH-01-003-001-003/390','MH-01-003-001-003/9999','MH-01-003-001-003/0000'],
+             mask:v=>'XX-XXX-'+v.slice(-4)}
+};
+const ID_KEYS = Object.keys(ID);
+const DL_STATUS = {ready:{l:'Ready',c:'b-ok'}, downloaded:{l:'Downloaded',c:'b-neutral'}, processing:{l:'Processing',c:'b-info'}, failed:{l:'Failed',c:'b-bad'}};
+const SE_STATUS = {completed:{l:'Completed',c:'b-ok'}, processing:{l:'Processing',c:'b-info'}, failed:{l:'Failed',c:'b-bad'}};
+const NAMES = ['RAHUL KUMAR SHARMA','PRIYA NAIR','ARJUN MEHTA','SNEHA IYER','VIKRAM SINGH','ANANYA REDDY','KARAN MALHOTRA','DIVYA PATIL','ROHAN GUPTA','MEERA PILLAI','ADITYA RAO','NEHA KULKARNI','SIDDHARTH JAIN','POOJA DESAI','AMIT VERMA','KAVYA MENON'];
+
+/* ================= Mock data ================= */
+// Search history — first 7 URN prefixes come from the Figma frame.
+const figmaUrns = ['05FE084838AD4D57A0','AC5DE8B881114E7C89','C1D289CE6D054578B','ECE64C37232540EFB7','8932E5EA59C94F4BB6','F5BCBF2CC6BE4325A','B9C0E5DA9C3AF4880'];
+const seRows = [];
+let m = 233;
+for (let i = 0; i < 26; i++) {
+  const urn = (figmaUrns[i] || hex(18)) ; const full = (urn + hex(32)).slice(0, 32);
+  let stage, status;
+  if (i < 3) { stage = 'records_uploading_completed'; status = 'processing'; }
+  else { const r = rnd(); if (r < .5) { stage = 'search_completed'; status = 'completed'; } else if (r < .78) { stage = 'download_completed'; status = 'completed'; } else if (r < .9) { stage = 'records_uploading_completed'; status = 'processing'; } else { stage = 'records_validation_failed'; status = 'failed'; } }
+  const created = minsAgo(m); const updated = new Date(created.getTime() + (status === 'processing' ? 0 : Math.floor(rnd()*40+2) * 60000));
+  seRows.push({urn: full, stage, status, coverage: status === 'failed' ? 0 : 1 + Math.floor(rnd()*3), created, updated: updated > NOW ? created : updated, idType: pick(ID_KEYS)});
+  m += i < 7 ? (i === 0 ? 1166 : 3 + Math.floor(rnd()*60)) : 200 + Math.floor(rnd()*1400);
+}
+
+// Download queue — first 8 rows mirror the Figma frame.
+const dlSeed = [
+  ['05FE084838AD4D57A0','pan','ABCDE1234F','ready',2],
+  ['AC5DE8B881114E7C89','aadhaar','582133904821','ready',2],
+  ['C1D289CE6D054578B','dl','MH1220190040921','downloaded',2],
+  ['ECE64C37232540EFB7','pan','BQRPS4871K','ready',1],
+  ['8932E5EA59C94F4BB6','passport','K8125612','processing',2],
+  ['F5BCBF2CC6BE4325A','voter','ZTP7317741','failed',0],
+  ['B9C0E5DA9C3AF4880','pan','CHLPK3402P','ready',2],
+  ['7AD31F0B6E2C4D19E','nrega','MH-01-003-001-003/390','downloaded',1],
+];
+const extra = [['pan','DKMPA6120R'],['aadhaar','734512908813'],['passport','M4410287'],['voter','HNB2290418'],['dl','KA0320170012876'],['pan','EVTPS9013L'],['aadhaar','918273645506']];
+const dlRows = [];
+let dm = 236;
+dlSeed.forEach((r, i) => { dlRows.push({urn:(r[0]+hex(32)).slice(0,32), idType:r[1], idNum:r[2], status:r[3], records:r[4], created:minsAgo(dm), name:NAMES[i]}); dm += i === 0 ? 1166 : 30 + Math.floor(rnd()*900); });
+extra.forEach((r, i) => { dm += 600 + Math.floor(rnd()*2600); dlRows.push({urn:hex(32), idType:r[0], idNum:r[1], status:pick(['ready','ready','downloaded','ready','processing']), records:1 + Math.floor(rnd()*2), created:minsAgo(dm), name:NAMES[8+i]}); });
+
+const OV = {
+  daily:  {total:1284, search:1102, download:987, create:743, update:612, fail:58, pending:124},
+  weekly: {total:8912, search:7754, download:6915, create:5302, update:4410, fail:357, pending:612}
+};
+
+/* ================= State ================= */
+const S = {
+  view:'overview', uploadSub:'overview',
+  ov:{range:'daily', from:addDays(TODAY,-13), to:TODAY, loading:false, updated:NOW},
+  se:{q:'', from:addDays(TODAY,-29), to:TODAY, preset:'30', status:'all', page:1, per:8},
+  fl:{step:1, type:null, value:'', touched:false, consent:false, phase:'idle', trace:0, result:null},
+  dl:{q:'', from:addDays(TODAY,-29), to:TODAY, preset:'30', types:new Set(), statuses:new Set(), page:1, per:8, sel:new Set()},
+};
+
+/* ================= Router ================= */
+const VIEWS = {overview:'view-overview', search:'view-search', flow:'view-flow', download:'view-download', 'upload-overview':'view-upload', 'upload-patterns':'view-upload'};
+function go(v, opts = {}) {
+  if (!VIEWS[v]) v = 'overview';
+  S.view = v;
+  $$('.view').forEach(el => el.hidden = el.id !== VIEWS[v]);
+  const navKey = v === 'flow' ? 'search' : v;
+  $$('.sidebar [data-go]').forEach(a => a.getAttribute('data-go') === navKey ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
+  if (v.startsWith('upload')) { setUploadOpen(true); $('#upSub').textContent = v === 'upload-patterns' ? 'Patterns' : 'Overview'; }
+  const hash = v === 'flow' ? 'search-record' : v;
+  if (location.hash.slice(1) !== hash) { try { history.replaceState(null, '', '#' + hash); } catch {} }
+  closeOverlays(); closeSide();
+  $('#main').scrollTop = 0;
+  if (v === 'overview') renderOverview();
+  if (v === 'search') renderSearch();
+  if (v === 'flow') renderFlow();
+  if (v === 'download') renderDownload();
+  updateReady();
+}
+function setUploadOpen(open) { $('#uploadToggle').setAttribute('aria-expanded', open); $('#uploadSub').hidden = !open; }
+$('#uploadToggle').addEventListener('click', () => setUploadOpen($('#uploadSub').hidden));
+
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if (g) { e.preventDefault(); go(g.dataset.go); return; }
+  const a = e.target.closest('[data-act]');
+  if (a) ACTIONS[a.dataset.act]?.(a, e);
+});
+const ACTIONS = {
+  'new-search': () => { resetFlow(); go('flow'); },
+  'support': () => toast({tone:'info', title:'Support', desc:'Write to support@decentro.tech or raise a ticket from the Decentro dashboard.'}),
+};
+
+/* Mobile sidebar */
+const appEl = $('#app');
+function closeSide() { appEl.classList.remove('side-open'); $('.side-scrim')?.remove(); }
+$('#menuToggle').addEventListener('click', () => {
+  if (appEl.classList.contains('side-open')) return closeSide();
+  appEl.classList.add('side-open');
+  const s = document.createElement('div'); s.className = 'side-scrim'; s.addEventListener('click', closeSide); document.body.appendChild(s);
+});
+
+/* ================= Overlays (popover / dialog) ================= */
+const OL = $('#overlays');
+let popState = null;
+function closeOverlays() { OL.innerHTML = ''; popState?.anchor?.setAttribute('aria-expanded','false'); popState = null; }
+function openPop(anchor, html, {width, onMount, align = 'left'} = {}) {
+  const same = popState && popState.anchor === anchor;
+  closeOverlays();
+  if (same) return null;
+  const el = document.createElement('div');
+  el.className = 'pop'; el.innerHTML = html; el.setAttribute('role','dialog');
+  if (width) el.style.width = width + 'px';
+  OL.appendChild(el);
+  popState = {anchor, el};
+  onMount?.(el);
+  const r = anchor.getBoundingClientRect(); const w = el.offsetWidth;
+  let left = align === 'right' ? r.right - w : r.left;
+  left = Math.max(12, Math.min(left, innerWidth - w - 12));
+  let top = r.bottom + 6; const h = el.offsetHeight;
+  if (top + h > innerHeight - 12) top = Math.max(12, innerHeight - h - 12);
+  el.style.left = left + 'px'; el.style.top = top + 'px';
+  anchor.setAttribute('aria-expanded','true');
+  (el.querySelector('[autofocus]') || el.querySelector('button,input'))?.focus({preventScroll:true});
+  return el;
+}
+function openDialog(html, {cls = '', sheet = false, onMount, labelledBy} = {}) {
+  closeOverlays();
+  const scrim = document.createElement('div');
+  scrim.className = 'scrim' + (sheet ? ' sheet-scrim' : '');
+  scrim.innerHTML = `<div class="${sheet ? 'sheet' : 'dialog'} ${cls}" role="dialog" aria-modal="true" ${labelledBy ? `aria-labelledby="${labelledBy}"` : ''}>${html}</div>`;
+  scrim.addEventListener('mousedown', e => { if (e.target === scrim) closeOverlays(); });
+  OL.appendChild(scrim);
+  popState = {anchor:null, el:scrim};
+  const box = scrim.firstElementChild;
+  onMount?.(box);
+  (box.querySelector('[autofocus]') || box.querySelector('button,input'))?.focus({preventScroll:true});
+  return box;
+}
+document.addEventListener('mousedown', e => {
+  if (!popState || !popState.anchor) return;
+  if (popState.el.contains(e.target) || popState.anchor.contains(e.target)) return;
+  closeOverlays();
+});
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmd(); return; }
+  if (e.key === 'Escape' && popState) { const a = popState.anchor; closeOverlays(); a?.focus(); }
+});
+addEventListener('resize', () => { if (popState?.anchor) closeOverlays(); });
+$('#main').addEventListener('scroll', () => { if (popState?.anchor) closeOverlays(); }, {passive:true});
+
+/* Menus (single/multi select) */
+function menuHTML(items, {multi = false} = {}) {
+  return `<div class="menu" role="menu">${items.map(it => it.sep ? '<hr>' : it.head ? `<div class="menu-h">${esc(it.head)}</div>` :
+    `<button role="${multi ? 'menuitemcheckbox' : 'menuitemradio'}" aria-checked="${!!it.on}" data-v="${esc(it.v)}">${it.icon ? ico(it.icon) : ''}${esc(it.l)}${ico('i-check','tick')}</button>`).join('')}</div>`;
+}
+function bindMenu(el, fn) { el.addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (b) fn(b.dataset.v, b); }); arrowNav(el, 'button[data-v]'); }
+function arrowNav(el, sel) {
+  el.addEventListener('keydown', e => {
+    if (!['ArrowDown','ArrowUp'].includes(e.key)) return;
+    const items = $$(sel, el); const i = items.indexOf(document.activeElement);
+    e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+  });
+}
+
+/* ================= Toasts ================= */
+function toast({tone = 'ok', title, desc = '', action, ms = 5200}) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + tone; t.setAttribute('role', tone === 'bad' ? 'alert' : 'status');
+  const icon = tone === 'ok' ? 'i-check' : tone === 'bad' ? 'i-alert' : 'i-info';
+  t.innerHTML = `<span class="t-ico">${ico(icon)}</span><div class="t-body"><b>${esc(title)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}${action ? `<div class="t-act"><button class="btn ${tone === 'bad' ? 'btn-outline' : 'btn-outline'} btn-sm">${esc(action.label)}</button></div>` : ''}</div><button class="icon-btn" aria-label="Dismiss">${ico('i-x','ico-sm')}</button>`;
+  const kill = () => { t.style.transition = 'opacity .2s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 200); };
+  t.querySelector('.icon-btn').onclick = kill;
+  if (action) t.querySelector('.t-act button').onclick = () => { action.fn(); kill(); };
+  $('#toasts').appendChild(t);
+  let timer = setTimeout(kill, ms);
+  t.addEventListener('mouseenter', () => clearTimeout(timer));
+  t.addEventListener('mouseleave', () => timer = setTimeout(kill, 2500));
+}
+
+/* ================= Overview ================= */
+function ovData() {
+  if (S.ov.range !== 'custom') return OV[S.ov.range];
+  const days = diffDays(S.ov.from, S.ov.to) + 1; const b = OV.daily;
+  const jit = k => 0.96 + ((days * 7 + k.length * 13) % 9) / 100;
+  const o = {}; Object.keys(b).forEach(k => o[k] = Math.round(b[k] * days * jit(k)));
+  return o;
+}
+function ovRangeText() {
+  if (S.ov.range === 'daily') return `Today, ${dayLblY(TODAY)}`;
+  if (S.ov.range === 'weekly') return `${dayLbl(addDays(TODAY,-6))} – ${dayLblY(TODAY)}`;
+  return `${dayLbl(S.ov.from)} – ${dayLblY(S.ov.to)}`;
+}
+function donut(p) {
+  const r = 30, c = 2 * Math.PI * r;
+  return `<svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label="${p}% conversion"><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--secondary)" stroke-width="9"/><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--primary)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(c*p/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 38 38)"/><text x="38" y="43" text-anchor="middle" font-size="15" font-weight="700" fill="var(--foreground)" font-family="Inter,sans-serif">${p}%</text></svg>`;
+}
+function renderOverview() {
+  const d = ovData(); const L = S.ov.loading; const pct = n => Math.round(n / d.total * 100);
+  $('#ovRangeText').textContent = `CKYC funnel · ${ovRangeText()} · IST`;
+  $('#ovUpdated').textContent = L ? 'Refreshing…' : `Updated ${tF.format(S.ov.updated)} IST`;
+  $$('.btn-group [data-range]').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === S.ov.range));
+  $('#customRangeBtn').textContent = S.ov.range === 'custom' ? `${dayLbl(S.ov.from)} – ${dayLbl(S.ov.to)}` : 'Custom';
+  const tiles = [
+    {k:'Total records', v:d.total, col:'var(--foreground)', meta:'All records in range', go:'search'},
+    {k:'Search success', v:d.search, col:'var(--c-green)', p:pct(d.search), go:'search'},
+    {k:'Download success', v:d.download, col:'var(--c-blue)', p:pct(d.download), go:'download'},
+    {k:'Create success', v:d.create, col:'var(--c-purple)', p:pct(d.create)},
+    {k:'Update success', v:d.update, col:'var(--c-green)', p:pct(d.update)},
+    {k:'Upload failures', v:d.fail, col:'var(--c-red)', p:pct(d.fail), bad:true},
+    {k:'Upload pending', v:d.pending, col:'var(--c-amber)', p:pct(d.pending)},
+  ];
+  const sk = L ? ' skeleton' : '';
+  $('#kpiGrid').innerHTML = tiles.map(t => {
+    const tag = t.go ? 'button' : 'div';
+    return `<${tag} class="kpi" ${t.go ? `data-go="${t.go}" aria-label="${t.k}: ${nf.format(t.v)}. Open ${t.go}"` : ''}>
+      ${t.go ? `<span class="kpi-go">${ico('i-right','ico-sm')}</span>` : ''}
+      <span class="kpi-label"><i style="background:${t.col}"></i>${t.k}</span>
+      <span class="kpi-value tnum${sk}">${nf.format(t.v)}</span>
+      ${t.p !== undefined ? `<span class="kpi-meta"><span class="pct tnum${sk}"${t.bad ? ' style="background:var(--bad-bg);color:var(--bad-fg)"' : ''}>${t.p}%</span>of total records</span><div class="meter"><span style="width:${L ? 0 : t.p}%;background:${t.col}"></span></div>`
+        : `<span class="kpi-meta">${t.meta}</span><div class="meter"><span style="width:${L ? 0 : 100}%;background:var(--foreground)"></span></div>`}
+    </${tag}>`;
+  }).join('') + `<div class="kpi kpi-donut"><div class="${sk}" style="border-radius:50%">${donut(pct(d.create))}</div><div class="donut-text"><span class="kpi-label">Overall conversion</span><span style="font-size:13px;color:var(--subtle)">Records → Created</span><span class="kpi-meta tnum">${nf.format(d.create)} of ${nf.format(d.total)}</span></div></div>`;
+
+  const st = [
+    {from:'Total', to:'Search', a:d.total, b:d.search},
+    {from:'Search', to:'Download', a:d.search, b:d.download},
+    {from:'Download', to:'Create', a:d.download, b:d.create},
+    {from:'Create', to:'Update', a:d.create, b:d.update},
+  ].map(s => ({...s, drop:s.a - s.b, share:Math.round((s.a - s.b) / d.total * 100), carried:Math.round(s.b / s.a * 100)}));
+  const worst = st.reduce((w, s) => s.drop > w.drop ? s : w, st[0]);
+  $('#stages').innerHTML = st.map(s => `<div class="stage${s === worst ? ' worst' : ''}">
+      ${s === worst ? '<span class="badge b-neutral worst-tag" style="background:var(--primary);color:#fff;border-color:var(--primary)">Largest drop</span>' : ''}
+      <span class="stage-route">${s.from}${ico('i-right')}${s.to}</span>
+      <span class="stage-num tnum${sk}">−${nf.format(s.drop)}<small>${s.share}% of total</small></span>
+      <div class="meter" style="height:6px"><span style="width:${L ? 0 : s.carried}%;background:var(--foreground)"></span></div>
+      <span class="stage-cap"><span>${s.carried}% carried forward</span><span class="tnum">${nf.format(s.b)} / ${nf.format(s.a)}</span></span>
+    </div>`).join('');
+  $('#legend').innerHTML = `<span><i style="background:var(--c-red)"></i>Failure rate <b>${pct(d.fail)}%</b></span><span><i style="background:var(--c-amber)"></i>Pending rate <b>${pct(d.pending)}%</b></span><span><i style="background:var(--c-green)"></i>Overall success <b>${pct(d.create)}%</b></span>`;
+}
+function ovReload() { S.ov.loading = true; renderOverview(); setTimeout(() => { S.ov.loading = false; S.ov.updated = new Date(); renderOverview(); }, 700); }
+$$('.btn-group [data-range]').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.range === 'custom') return openRangePop(b, 'ov');
+  S.ov.range = b.dataset.range; closeOverlays(); ovReload();
+}));
+$('#ovRefresh').addEventListener('click', () => { ovReload(); toast({tone:'info', title:'Overview refreshed', desc:ovRangeText()}); });
+
+/* ================= Date range popover (shared) ================= */
+const PRESETS = [['today','Today',0],['7','Last 7 days',6],['30','Last 30 days',29],['90','Last 90 days',89]];
+function rangeLabel(st) { const p = PRESETS.find(p => p[0] === st.preset); return p ? p[1] : `${dayLbl(st.from)} – ${dayLbl(st.to)}`; }
+function openRangePop(anchor, key) {
+  const st = key === 'ov' ? S.ov : S[key];
+  const cur = {from:st.from, to:st.to};
+  openPop(anchor, `<div class="pop-panel">
+      <div class="pop-head"><h3>Created date</h3><span class="hint">IST</span></div>
+      <div class="chips" id="rpChips">${PRESETS.map(p => `<button class="chip" data-p="${p[0]}" aria-pressed="${st.preset === p[0]}">${p[1]}</button>`).join('')}</div>
+      <div class="date-pair">
+        <div class="field"><label for="rpFrom">From</label><input class="input" type="date" id="rpFrom" value="${cur.from}" max="${TODAY}"></div>
+        <div class="field"><label for="rpTo">To</label><input class="input" type="date" id="rpTo" value="${cur.to}" max="${TODAY}"></div>
+      </div>
+      <span class="hint" id="rpErr"></span>
+      <div class="pop-foot" style="padding-top:0;border:0"><button class="btn btn-outline" id="rpCancel">Cancel</button><button class="btn btn-primary" id="rpApply">Apply range</button></div>
+    </div>`, {width:380, align: key === 'ov' ? 'right' : 'left', onMount: el => {
+      let preset = st.preset;
+      const f = $('#rpFrom', el), t = $('#rpTo', el), err = $('#rpErr', el);
+      $('#rpChips', el).addEventListener('click', e => { const c = e.target.closest('[data-p]'); if (!c) return; preset = c.dataset.p; const p = PRESETS.find(x => x[0] === preset); f.value = addDays(TODAY, -p[2]); t.value = TODAY; $$('[data-p]', el).forEach(x => x.setAttribute('aria-pressed', x === c)); err.textContent = ''; });
+      [f, t].forEach(i => i.addEventListener('input', () => { preset = 'custom'; $$('[data-p]', el).forEach(x => x.setAttribute('aria-pressed', false)); }));
+      $('#rpCancel', el).onclick = closeOverlays;
+      $('#rpApply', el).onclick = () => {
+        if (!f.value || !t.value) { err.className = 'hint bad'; err.textContent = 'Pick both dates.'; return; }
+        if (f.value > t.value) { err.className = 'hint bad'; err.textContent = '“From” must be on or before “To”.'; return; }
+        st.from = f.value; st.to = t.value; st.preset = preset;
+        closeOverlays();
+        if (key === 'ov') { S.ov.range = 'custom'; ovReload(); }
+        else { st.page = 1; key === 'se' ? renderSearch() : renderDownload(); }
+      };
+    }});
+}
+$('#seDateBtn').addEventListener('click', e => openRangePop(e.currentTarget, 'se'));
+$('#dlDateBtn').addEventListener('click', e => openRangePop(e.currentTarget, 'dl'));
+
+/* ================= Search list ================= */
+function seFiltered() {
+  const q = S.se.q.trim().toUpperCase();
+  return seRows.filter(r => (!q || r.urn.includes(q)) && (S.se.status === 'all' || r.status === S.se.status) && ymd(r.created) >= S.se.from && ymd(r.created) <= S.se.to);
+}
+function pager(el, page, pages, onGo) {
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  let html = `<button aria-label="Previous page" ${page === 1 ? 'disabled' : ''} data-p="${page - 1}">${ico('i-chev-l','ico-sm')}</button>`;
+  for (let i = 1; i <= pages; i++) html += `<button data-p="${i}" ${i === page ? 'aria-current="page"' : ''}>${i}</button>`;
+  html += `<button aria-label="Next page" ${page === pages ? 'disabled' : ''} data-p="${page + 1}">${ico('i-chev-r','ico-sm')}</button>`;
+  el.innerHTML = html;
+  el.onclick = e => { const b = e.target.closest('[data-p]'); if (b && !b.disabled) onGo(+b.dataset.p); };
+}
+function renderSearch(flashUrn) {
+  const rows = seFiltered(); const per = S.se.per; const pages = Math.max(1, Math.ceil(rows.length / per));
+  S.se.page = Math.min(S.se.page, pages);
+  const slice = rows.slice((S.se.page - 1) * per, S.se.page * per);
+  $('#seCount').textContent = rows.length;
+  $('#seDateLbl').textContent = rangeLabel(S.se);
+  $('#seStatusLbl').textContent = S.se.status === 'all' ? 'All' : SE_STATUS[S.se.status].l;
+  $('#seStatusBtn').classList.toggle('on', S.se.status !== 'all');
+  $('#seBody').innerHTML = slice.length ? slice.map(r => `<tr class="clickable${r.urn === flashUrn ? ' new-row' : ''}" data-urn="${r.urn}" tabindex="0">
+      <td><span class="urn"><span class="mono" title="${r.urn}">${r.urn.slice(0,18)}…</span><button class="copy-btn" data-copy="${r.urn}" aria-label="Copy URN">${ico('i-copy','ico-sm')}</button></span></td>
+      <td><span class="badge b-stage">${r.stage}</span></td>
+      <td class="muted tnum">${fmtDT(r.created)}</td>
+      <td class="muted tnum">${fmtDT(r.updated)}</td>
+      <td><span class="badge ${SE_STATUS[r.status].c}">${SE_STATUS[r.status].l}</span></td>
+      <td class="num">${r.coverage}</td></tr>`).join('')
+    : `<tr><td colspan="6"><div class="empty">${ico('i-searchx')}<h3>No records match</h3><p>Nothing in ${esc(rangeLabel(S.se).toLowerCase())}${S.se.q ? ` matches “${esc(S.se.q)}”` : ''}. Widen the date range or clear the search.</p><div class="head-actions"><button class="btn btn-outline" id="seClear">Clear search and filters</button></div></div></td></tr>`;
+  $('#seFoot').textContent = rows.length ? `Showing ${(S.se.page - 1) * per + 1}–${(S.se.page - 1) * per + slice.length} of ${rows.length} records` : '';
+  pager($('#sePager'), S.se.page, pages, p => { S.se.page = p; renderSearch(); });
+  $('#seClear')?.addEventListener('click', () => { S.se.q = ''; $('#seQ').value = ''; S.se.status = 'all'; S.se.preset = '90'; S.se.from = addDays(TODAY,-89); S.se.to = TODAY; renderSearch(); });
+}
+$('#seQ').addEventListener('input', e => { S.se.q = e.target.value; S.se.page = 1; renderSearch(); });
+$('#seStatusBtn').addEventListener('click', e => {
+  const el = openPop(e.currentTarget, menuHTML([{v:'all', l:'All statuses', on:S.se.status === 'all'}, {sep:1}, ...Object.entries(SE_STATUS).map(([k, s]) => ({v:k, l:s.l, on:S.se.status === k}))]));
+  if (el) bindMenu(el, v => { S.se.status = v; S.se.page = 1; closeOverlays(); renderSearch(); });
+});
+$('#seRefresh').addEventListener('click', () => tableRefresh('#seBody', 6, renderSearch));
+function tableRefresh(body, cols, done) {
+  $(body).innerHTML = Array.from({length:5}, () => `<tr>${Array.from({length:cols}, () => '<td><div class="skeleton" style="height:14px;width:80%">.</div></td>').join('')}</tr>`).join('');
+  setTimeout(() => { done(); toast({tone:'info', title:'Table refreshed', desc:`As of ${tF.format(new Date())} IST`}); }, 650);
+}
+$('#seBody').addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]'); if (c) { e.stopPropagation(); return copyText(c.dataset.copy, 'URN copied'); }
+  const tr = e.target.closest('tr[data-urn]'); if (tr) openSeSheet(tr.dataset.urn);
+});
+$('#seBody').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('tr[data-urn]')) openSeSheet(e.target.dataset.urn); });
+
+function openSeSheet(urn) {
+  const r = seRows.find(x => x.urn === urn); if (!r) return;
+  const steps = [
+    {k:'records_uploading_completed', l:'Records uploaded'},
+    {k:'search_completed', l:'CKYC search'},
+    {k:'download_completed', l:'CKYC download'},
+  ];
+  const at = r.stage === 'records_validation_failed' ? 0 : steps.findIndex(s => s.k === r.stage);
+  const tl = steps.map((s, i) => {
+    let cls = '', note = 'Not started';
+    if (r.status === 'failed' && i === 0) { cls = 'bad'; note = 'Validation failed · 0 IDs matched'; }
+    else if (i < at || (i === at && r.status === 'completed')) { cls = 'ok'; note = fmtDT(i === at ? r.updated : r.created) + ' IST'; }
+    else if (i === at + (r.status === 'processing' ? 1 : 0) && r.status === 'processing') { cls = 'run'; note = 'In progress'; }
+    if (i === 0 && r.status !== 'failed') { cls = 'ok'; note = fmtDT(r.created) + ' IST'; }
+    return `<div class="tl ${cls}"><i>${cls === 'ok' ? ico('i-check') : cls === 'bad' ? ico('i-x') : ''}</i><div><b>${s.k}</b><small>${s.l} · ${note}</small></div></div>`;
+  }).join('');
+  openDialog(`<div class="dialog-head"><div><h2 id="shH">Search record</h2><p class="mono" style="word-break:break-all">${r.urn}</p></div><button class="icon-btn" data-close aria-label="Close">${ico('i-x')}</button></div>
+    <div class="dialog-body">
+      <div class="result-top"><span class="badge ${SE_STATUS[r.status].c}">${SE_STATUS[r.status].l}</span><span class="badge b-stage">${r.stage}</span></div>
+      <dl>
+        <div class="drow"><dt>ID type</dt><dd>${ID[r.idType].label}</dd></div>
+        <div class="drow"><dt>Coverage</dt><dd class="tnum">${r.coverage} ID document${r.coverage === 1 ? '' : 's'} matched</dd></div>
+        <div class="drow"><dt>Created on</dt><dd class="tnum">${fmtDT(r.created)}</dd></div>
+        <div class="drow"><dt>Updated on</dt><dd class="tnum">${fmtDT(r.updated)}</dd></div>
+      </dl>
+      <div class="dl-section" style="margin-top:8px">Stage timeline</div>
+      <div class="timeline">${tl}</div>
+      ${r.status === 'failed' ? `<div class="alert alert-bad">${ico('i-alert')}<div><b>Upload failed validation</b>None of the uploaded IDs passed format checks. Fix the file and upload again.</div></div>` : ''}
+    </div>
+    <div class="dialog-foot"><button class="btn btn-outline" data-copy-urn>${ico('i-copy')}Copy URN</button>${r.status === 'completed' ? `<button class="btn btn-primary" data-to-dl>${ico('i-download')}Find in Download</button>` : `<button class="btn btn-primary" data-new>${ico('i-search')}New search</button>`}</div>`,
+    {sheet:true, labelledBy:'shH', onMount: el => {
+      el.querySelector('[data-close]').onclick = closeOverlays;
+      el.querySelector('[data-copy-urn]').onclick = () => copyText(r.urn, 'URN copied');
+      el.querySelector('[data-new]')?.addEventListener('click', () => { resetFlow(); go('flow'); });
+      el.querySelector('[data-to-dl]')?.addEventListener('click', () => { S.dl.q = r.urn.slice(0, 10); $('#dlQ').value = S.dl.q; S.dl.preset = '90'; S.dl.from = addDays(TODAY,-89); S.dl.to = TODAY; go('download'); });
+    }});
+}
+
+/* ================= Search flow ================= */
+function resetFlow() { S.fl = {step:1, type:null, value:'', touched:false, consent:false, phase:'idle', trace:0, result:null}; }
+function flValid() { const t = ID[S.fl.type]; return t && t.re.test(S.fl.value) && (!t.consent || S.fl.consent); }
+function renderStepper() {
+  const labels = ['Select ID','Enter details','View result'];
+  const s = S.fl.step;
+  $('#flStepper').innerHTML = labels.map((l, i) => {
+    const n = i + 1; const st = n < s ? 'done' : n === s ? 'active' : '';
+    return (i ? '<span class="step-line"></span>' : '') + `<span class="step ${st}" ${n === s ? 'aria-current="step"' : ''}><span class="step-dot">${n < s ? ico('i-check') : n}</span>${l}</span>`;
+  }).join('') + `<span class="pctxt">Step ${s} of 3</span>`;
+  $('#flFill').style.width = (s === 3 && S.fl.phase !== 'idle' ? 100 : (s - 1) * 50 + (s === 2 && flValid() ? 25 : 0)) + '%';
+}
+function renderFlow() {
+  renderStepper();
+  const f = S.fl; const t = ID[f.type];
+  const sub = {1:'Select the ID type to search with', 2:'Enter the required details', 3:'CKYC registry response'}[f.step];
+  $('#flSub').textContent = sub;
+  const card = $('#flCard');
+  if (f.step === 1) {
+    card.innerHTML = `<div class="card-head"><div><h2 class="card-title">Officially valid document</h2><p class="card-sub">Search with the ID the customer used at their last KYC</p></div></div>
+      <div class="card-body"><div class="id-grid" role="radiogroup" aria-label="ID type">${ID_KEYS.map(k => `<button class="id-tile" role="radio" aria-checked="${f.type === k}" data-id="${k}"><span class="radio"></span><span class="id-icon">${ico(ID[k].icon)}</span><span><b>${ID[k].label}</b><small>${ID[k].sub}</small></span></button>`).join('')}</div></div>
+      <div class="card-foot"><span class="left">${f.type ? `${ID[f.type].label} selected` : 'Pick one ID type to continue'}</span><button class="btn btn-primary" id="flNext" ${f.type ? '' : 'disabled'}>Continue${ico('i-right')}</button></div>`;
+    const grid = $('.id-grid', card);
+    grid.addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (!b) return; if (f.type !== b.dataset.id) { f.value = ''; f.touched = false; f.consent = false; } f.type = b.dataset.id; renderFlow(); $(`[data-id="${f.type}"]`, $('#flCard')).focus(); });
+    grid.addEventListener('dblclick', e => { if (e.target.closest('[data-id]')) { f.step = 2; renderFlow(); } });
+    grid.addEventListener('keydown', e => {
+      const keys = {ArrowRight:1, ArrowDown:3, ArrowLeft:-1, ArrowUp:-3};
+      if (e.key === 'Enter' && f.type) { e.preventDefault(); f.step = 2; return renderFlow(); }
+      if (!(e.key in keys)) return; e.preventDefault();
+      const i = ID_KEYS.indexOf(f.type ?? 'pan'); f.type = ID_KEYS[(i + keys[e.key] + 6) % 6]; renderFlow(); $(`[data-id="${f.type}"]`, $('#flCard')).focus();
+    });
+    $('#flNext').onclick = () => { f.step = 2; renderFlow(); $('#flInput')?.focus(); };
+  }
+  if (f.step === 2) {
+    const busy = f.phase === 'searching';
+    const shown = t.show ? t.show(f.value) : f.value;
+    card.innerHTML = `<div class="card-head"><div class="picked" style="background:transparent;border:0;padding:0;flex:1"><span class="id-icon" style="background:var(--background);border:1px solid var(--border)">${ico(t.icon)}</span><div><b>${t.label}</b><small>${t.sub}</small></div><button class="btn btn-outline btn-sm" id="flChange" ${busy ? 'disabled' : ''}>Change ID type</button></div></div>
+      <div class="card-body"><form class="form-stack" id="flForm" novalidate>
+        <div class="field">
+          <label for="flInput">${t.field} <span class="req">*</span></label>
+          <input class="input input-lg mono" id="flInput" value="${esc(shown)}" placeholder="${t.ph}" maxlength="${t.max}" autocomplete="off" spellcheck="false" ${busy ? 'readonly' : ''} aria-describedby="flHint">
+          <span class="hint" id="flHint" aria-live="polite"></span>
+        </div>
+        ${t.consent ? `<div class="check-row" id="flConsent" role="checkbox" tabindex="0" aria-checked="${f.consent}"><span class="cb" aria-checked="${f.consent}">${ico('i-check','i-check')}</span><span>The customer has consented to a CKYC search with their Aadhaar number. <span class="req">*</span></span></div>` : ''}
+        <div class="samples"><span>Demo inputs:</span>${t.samples.map((s, i) => `<button type="button" data-sample="${esc(s)}" title="${['Record found','No record','Registry error'][i]}" ${busy ? 'disabled' : ''}>${esc(t.show ? t.show(s) : s)}</button>`).join('')}<span>found · not found · error</span></div>
+        ${busy ? `<div class="trace" aria-live="polite">${['Format validated','Querying CKYC registry','Fetching KYC record'].map((l, i) => `<div class="${i < f.trace ? 'done' : i === f.trace ? 'run' : ''}">${i < f.trace ? ico('i-check') : i === f.trace ? '<span class="spinner"></span>' : '<span class="pend"></span>'}${l}</div>`).join('')}</div>` : ''}
+        <button class="btn btn-primary btn-block" type="submit" id="flGo" ${busy ? 'disabled' : ''}>${busy ? '<span class="spinner"></span>Searching CKYC registry…' : ico('i-search') + 'Search record'}</button>
+      </form></div>
+      <div class="card-foot" style="justify-content:flex-start"><button class="btn btn-ghost btn-sm" id="flBack" ${busy ? 'disabled' : ''}>${ico('i-left')}Back</button></div>`;
+    const inp = $('#flInput');
+    const sync = () => {
+      const ok = t.re.test(f.value); const show = f.touched || ok;
+      inp.classList.toggle('is-ok', ok); inp.classList.toggle('is-bad', show && !ok && f.value.length > 0);
+      const h = $('#flHint');
+      if (ok) { h.className = 'hint ok'; h.innerHTML = ico('i-check','ico-sm') + `Valid ${t.label.replace(' Card','')} format`; }
+      else if (f.touched && f.value) { h.className = 'hint bad'; h.innerHTML = ico('i-alert','ico-sm') + esc(t.err); }
+      else { h.className = 'hint'; h.textContent = `Format: ${t.fmt}`; }
+      $('#flGo').disabled = busy || !flValid();
+      $('#flGo').setAttribute('aria-disabled', !flValid());
+      renderStepper();
+    };
+    inp.addEventListener('input', () => {
+      const raw = inp.value; f.value = t.norm(raw);
+      const disp = t.show ? t.show(f.value) : f.value;
+      if (disp !== raw) { inp.value = disp; }
+      if (f.touched === false && f.value.length >= (t.re.source.includes('{11}') ? 12 : t.max - 1)) f.touched = true;
+      sync();
+    });
+    inp.addEventListener('blur', () => { if (f.value) { f.touched = true; sync(); } });
+    $('#flConsent')?.addEventListener('click', () => { f.consent = !f.consent; $('#flConsent').setAttribute('aria-checked', f.consent); $('#flConsent .cb').setAttribute('aria-checked', f.consent); sync(); });
+    $('#flConsent')?.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); $('#flConsent').click(); } });
+    $$('[data-sample]', card).forEach(b => b.onclick = () => { f.value = b.dataset.sample; f.touched = true; if (t.consent) f.consent = true; renderFlow(); $('#flGo').focus(); });
+    $('#flForm').addEventListener('submit', e => { e.preventDefault(); if (!flValid()) { f.touched = true; sync(); inp.focus(); if (t.consent && t.re.test(f.value) && !f.consent) toast({tone:'bad', title:'Consent needed', desc:'Confirm the customer’s consent before searching with Aadhaar.'}); return; } runSearch(); });
+    $('#flChange').onclick = $('#flBack').onclick = () => { f.step = 1; renderFlow(); };
+    sync();
+  }
+  if (f.step === 3) renderResult(card);
+  renderGuide();
+}
+function runSearch() {
+  const f = S.fl; f.phase = 'searching'; f.trace = 0; renderFlow();
+  const tick = () => {
+    f.trace++;
+    if (f.trace < 3) { renderFlow(); setTimeout(tick, 550); return; }
+    const v = f.value;
+    const outcome = v.includes('0000') ? 'error' : v.includes('9999') ? 'none' : 'found';
+    f.phase = outcome; f.step = 3;
+    f.result = {txn:'DEC' + alnum(29), urn:hex(32), at:new Date()};
+    if (outcome === 'found') {
+      const row = {urn:f.result.urn, stage:'search_completed', status:'completed', coverage:2, created:f.result.at, updated:f.result.at, idType:f.type};
+      seRows.unshift(row);
+      toast({title:'Record found', desc:`Added to search history · ${row.urn.slice(0,12)}…`, action:{label:'View history', fn:() => go('search')}});
+    }
+    renderFlow();
+    $('#main').scrollTop = 0;
+  };
+  setTimeout(tick, 500);
+}
+function photoSVG() {
+  return `<svg viewBox="0 0 168 204" role="img" aria-label="Photo on CKYC record"><rect width="168" height="204" fill="#e2e8f0"/><circle cx="84" cy="80" r="34" fill="#94a3b8"/><path d="M22 204c4-40 30-64 62-64s58 24 62 64z" fill="#94a3b8"/></svg>`;
+}
+function renderResult(card) {
+  const f = S.fl; const t = ID[f.type]; const r = f.result;
+  const meta = (code, key) => `<div class="meta-strip"><span>TXN: <b>${r.txn}</b></span><span>Code: <b>${code}</b></span><span>Key: <b>${key}</b></span><button class="copy-btn" id="flCopyTxn" aria-label="Copy transaction ID">${ico('i-copy','ico-sm')}</button></div>`;
+  const actions = `<button class="btn btn-outline" id="flNew">${ico('i-plus')}New search</button>`;
+  if (f.phase === 'found') {
+    card.innerHTML = `<div class="card-head"><div class="result-top" style="flex:1"><span class="badge b-ok" style="height:28px;padding:0 10px;font-size:12.5px">${ico('i-shield','ico-sm')}KYC verified</span><span class="sp"></span>${actions}<button class="btn btn-primary" id="flToDl">${ico('i-download')}Download record</button></div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:20px">
+        ${meta('S00000','success_ckyc_search')}
+        <div class="record">
+          <div class="photo">${photoSVG()}<small>PHOTO · JPG</small></div>
+          <dl>
+            <div class="dl-section">Personal details</div>
+            <div class="drow"><dt>Full name</dt><dd>RAHUL KUMAR SHARMA</dd></div>
+            <div class="drow"><dt>Age</dt><dd>32 years</dd></div>
+            <div class="drow"><dt>Father’s name</dt><dd>SURESH KUMAR SHARMA</dd></div>
+            <div class="drow"><dt>KYC date</dt><dd class="tnum">15-03-2021</dd></div>
+            <div class="drow"><dt>Last updated</dt><dd class="tnum">27-02-2026</dd></div>
+            <div class="dl-gap"></div>
+            <div class="dl-section">CKYC reference</div>
+            <div class="drow"><dt>CKYC ID</dt><dd class="mono" style="font-size:13.5px">60014100123456</dd></div>
+            <div class="drow"><dt>Reference ID</dt><dd class="mono" style="font-size:13.5px">REF20240227001</dd></div>
+            <div class="drow"><dt>Searched with</dt><dd><span class="mono" style="font-size:13px">${esc(t.mask(f.value))}</span> · ${t.label}</dd></div>
+          </dl>
+        </div>
+        <div><div class="dl-section">Identity documents</div><div class="docs">
+          <span class="doc">${ico(t.icon)}${t.label}<span class="badge b-neutral">Status 03</span></span>
+          ${f.type !== 'dl' ? `<span class="doc">${ico('i-car')}Driving Licence<span class="badge b-neutral">Status 03</span></span>` : ''}
+        </div></div>
+        <div class="alert alert-ok">${ico('i-check')}<div>KYC details for CKYC retrieved successfully. Use Download to pull the full record with photo and document images.</div></div>
+      </div>`;
+    $('#flToDl').onclick = () => {
+      const row = {urn:r.urn, idType:f.type, idNum:f.value, status:'ready', records:2, created:r.at, name:'RAHUL KUMAR SHARMA', fresh:true};
+      if (!dlRows.find(x => x.urn === r.urn)) dlRows.unshift(row);
+      S.dl.q = ''; $('#dlQ').value = ''; S.dl.types.clear(); S.dl.statuses.clear(); S.dl.preset = '30'; S.dl.from = addDays(TODAY,-29); S.dl.to = TODAY; S.dl.page = 1;
+      S.dl.sel = new Set([r.urn]); S.dl.flash = r.urn;
+      go('download');
+    };
+  } else if (f.phase === 'none') {
+    card.innerHTML = `<div class="card-head"><div class="result-top" style="flex:1"><span class="badge b-warn" style="height:28px;padding:0 10px;font-size:12.5px">No record</span><span class="sp"></span>${actions}</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:20px">
+        ${meta('S00001','ckyc_record_not_found')}
+        <div class="empty" style="padding:24px 12px">${ico('i-searchx')}<h3>No CKYC record for ${t.label} ${esc(t.mask(f.value))}</h3><p>The registry has no KYC filed against this ID. Search again with another ID the customer holds, or run fresh KYC.</p>
+          <div class="head-actions"><button class="btn btn-primary" id="flOther">Try another ID type</button></div></div>
+      </div>`;
+    $('#flOther').onclick = () => { S.fl = {...S.fl, step:1, type:null, value:'', touched:false, consent:false, phase:'idle'}; renderFlow(); };
+  } else {
+    card.innerHTML = `<div class="card-head"><div class="result-top" style="flex:1"><span class="badge b-bad" style="height:28px;padding:0 10px;font-size:12.5px">Search failed</span><span class="sp"></span>${actions}</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:20px">
+        ${meta('E00500','ckyc_registry_unavailable')}
+        <div class="alert alert-bad">${ico('i-alert')}<div><b>The CKYC registry didn’t respond</b>Nothing was charged and no record was created. Retry now — if it fails again, the registry is likely in a maintenance window.</div></div>
+        <div><button class="btn btn-primary" id="flRetry">${ico('i-refresh')}Retry search</button></div>
+      </div>`;
+    $('#flRetry').onclick = () => { S.fl.step = 2; S.fl.value = S.fl.value.replace('0000', '0040'); toast({tone:'info', title:'Retrying', desc:'Demo: the retry uses a working ID so you can see the success path.'}); runSearch(); };
+  }
+  $('#flNew').onclick = () => { resetFlow(); renderFlow(); };
+  $('#flCopyTxn').onclick = () => copyText(r.txn, 'Transaction ID copied');
+}
+function renderGuide() {
+  const f = S.fl; const t = ID[f.type];
+  const G = {
+    1: {h:'Choosing an ID', items:[
+          ['i-idcard','PAN gives the fastest match. Most CKYC records carry one.'],
+          ['i-finger','Aadhaar searches need the customer’s consent on record before you search.'],
+          ['i-car','Use Driving Licence, Passport, Voter ID or NREGA when the customer has no PAN.']],
+        tip:'Search with the ID the customer used at their last KYC. A different ID can miss a record that exists.'},
+    2: {h:'Format check', items: t ? [['i-info',`Expected format: <span class="fmt" style="display:inline-block;margin-top:4px">${t.fmt}</span>`], ['i-check','We check the format before calling the registry, so a typo never costs a search.'], ['i-eye','Example: <span class="mono">' + esc(t.ex) + '</span>']] : [],
+        tip:'Copy the number from the document itself, not from a form the customer filled in.'},
+    3: {h:'What you got back', items:[
+          ['i-shield','The CKYC ID is the 14-digit number that identifies this customer across regulated entities.'],
+          ['i-download','Search confirms the record exists. Download pulls the full record with photo and document images.'],
+          ['i-copy','Keep the TXN ID with the customer file for audit.']],
+        tip:'Check the KYC date. Records older than your re-KYC policy need a fresh update.'}
+  }[f.step];
+  const steps = ['Select ID','Enter details','View result'];
+  $('#flGuide').innerHTML = `<div class="card"><div class="card-head" style="min-height:52px"><h3 class="card-title" style="font-size:14px">${G.h}</h3></div>
+      <div class="card-body"><div class="guide-list">${G.items.map(([i, txt]) => `<div>${ico(i)}<span>${txt}</span></div>`).join('')}</div>
+      <div class="alert alert-warn" style="font-size:12.5px">${ico('i-info')}<div>${G.tip}</div></div></div></div>
+    <div class="card"><div class="card-body"><div class="dl-section">Search progress</div><div class="prog">${steps.map((s, i) => `<div class="${i + 1 < f.step || (f.step === 3 && f.phase !== 'idle') ? 'done' : i + 1 === f.step ? 'now' : ''}"><i></i>${s}${i === 0 && f.type ? ` · <span style="font-weight:500">${ID[f.type].label}</span>` : ''}</div>`).join('')}</div></div></div>`;
+}
+
+/* ================= Download ================= */
+function dlFiltered() {
+  const q = S.dl.q.trim().toUpperCase().replace(/\s/g,'');
+  return dlRows.filter(r => {
+    if (q && !r.urn.includes(q) && !r.idNum.toUpperCase().replace(/\s/g,'').includes(q) && !ID[r.idType].mask(r.idNum).replace(/\s/g,'').includes(q)) return false;
+    if (S.dl.types.size && !S.dl.types.has(r.idType)) return false;
+    if (S.dl.statuses.size && !S.dl.statuses.has(r.status)) return false;
+    const d = ymd(r.created); return d >= S.dl.from && d <= S.dl.to;
+  });
+}
+const selectable = r => r.status === 'ready' || r.status === 'downloaded';
+function setLbl(set, map) { if (!set.size) return 'All'; if (set.size === 1) return map([...set][0]); return `${set.size} selected`; }
+function renderDownload() {
+  const D = S.dl; const rows = dlFiltered(); const per = D.per; const pages = Math.max(1, Math.ceil(rows.length / per));
+  D.page = Math.min(D.page, pages);
+  // drop selections that are filtered out or no longer selectable
+  D.sel.forEach(u => { const r = rows.find(x => x.urn === u); if (!r || !selectable(r)) D.sel.delete(u); });
+  const slice = rows.slice((D.page - 1) * per, D.page * per);
+  const able = rows.filter(selectable);
+  $('#dlCount').textContent = rows.length;
+  $('#dlDateLbl').textContent = rangeLabel(D);
+  $('#dlTypeLbl').textContent = setLbl(D.types, k => ID[k].label);
+  $('#dlStatusLbl').textContent = setLbl(D.statuses, k => DL_STATUS[k].l);
+  $('#dlTypeBtn').classList.toggle('on', D.types.size > 0);
+  $('#dlStatusBtn').classList.toggle('on', D.statuses.size > 0);
+  const nf_ = D.types.size + D.statuses.size + (D.preset !== '30' ? 1 : 0);
+  $('#dlFilterN').hidden = !nf_; $('#dlFilterN').textContent = nf_;
+
+  // active chips
+  const chips = [];
+  if (D.preset !== '30') chips.push({k:'date', l:`Date: ${rangeLabel(D)}`});
+  D.types.forEach(k => chips.push({k:'type:' + k, l:`ID type: ${ID[k].label}`}));
+  D.statuses.forEach(k => chips.push({k:'status:' + k, l:`Status: ${DL_STATUS[k].l}`}));
+  const af = $('#dlActive'); af.hidden = !chips.length;
+  af.innerHTML = chips.length ? `<span class="lbl">Active filters</span>${chips.map(c => `<span class="fchip">${esc(c.l)}<button data-rm="${c.k}" aria-label="Remove ${esc(c.l)}">${ico('i-x','ico-sm')}</button></span>`).join('')}<button class="link-btn" data-rm="all" style="font-size:12.5px">Clear all</button>` : '';
+
+  // selection bar
+  const n = D.sel.size; const entries = dlRows.filter(r => D.sel.has(r.urn)).reduce((a, r) => a + r.records, 0);
+  const sb = $('#dlSelBar'); sb.hidden = !n;
+  const blocked = rows.length - able.length;
+  sb.innerHTML = n ? `<b class="tnum">${n} of ${able.length} downloadable record${able.length === 1 ? '' : 's'} selected</b><span class="note tnum">${entries} KYC entr${entries === 1 ? 'y' : 'ies'}${blocked ? ` · ${blocked} processing or failed can’t be selected` : ''}</span><span class="sp"></span>${n < able.length ? `<button id="dlSelAll">Select all ${able.length}</button>` : ''}<button id="dlSelClear">${ico('i-x','ico-sm')}Clear selection</button>` : '';
+  $('#dlSelAll')?.addEventListener('click', () => { able.forEach(r => D.sel.add(r.urn)); renderDownload(); });
+  $('#dlSelClear')?.addEventListener('click', () => { D.sel.clear(); renderDownload(); });
+
+  // header checkbox (scope: downloadable rows matching filters)
+  const all = $('#dlAll'); const st = !n ? 'false' : n === able.length ? 'true' : 'mixed';
+  all.setAttribute('aria-checked', st); all.disabled = !able.length;
+  all.querySelector('.i-mixed').style.opacity = st === 'mixed' ? 1 : 0;
+
+  $('#dlCta').disabled = !n; $('#dlCtaN').textContent = n;
+
+  $('#dlBody').innerHTML = slice.length ? slice.map(r => {
+    const ok = selectable(r); const on = D.sel.has(r.urn);
+    return `<tr class="${ok ? 'clickable' : ''}${on ? ' sel' : ''}${D.flash === r.urn ? ' new-row' : ''}" data-urn="${r.urn}">
+      <td><button class="cb" role="checkbox" aria-checked="${on}" ${ok ? '' : 'disabled'} aria-label="${ok ? 'Select' : 'Not downloadable yet:'} ${r.urn.slice(0,10)}" ${ok ? '' : `title="${DL_STATUS[r.status].l} records can't be downloaded"`}>${ico('i-check','i-check')}</button></td>
+      <td><span class="urn"><span class="mono" title="${r.urn}">${r.urn.slice(0,18)}…</span><button class="copy-btn" data-copy="${r.urn}" aria-label="Copy URN">${ico('i-copy','ico-sm')}</button></span></td>
+      <td>${ID[r.idType].label}</td>
+      <td class="mono" style="color:var(--subtle)">${esc(ID[r.idType].mask(r.idNum))}</td>
+      <td class="muted tnum">${fmtDT(r.created)}</td>
+      <td><span class="badge ${DL_STATUS[r.status].c}">${r.status === 'processing' ? '<span class="spinner" style="width:9px;height:9px;border-width:1.5px"></span>' : ''}${DL_STATUS[r.status].l}</span></td>
+      <td class="num">${r.records}</td></tr>`;
+  }).join('') : `<tr><td colspan="7"><div class="empty">${ico('i-searchx')}<h3>No records match these filters</h3><p>Try a wider date range or remove a filter.</p><div class="head-actions"><button class="btn btn-outline" data-rm="all">Clear all filters</button></div></div></td></tr>`;
+  D.flash = null;
+  $('#dlFoot').textContent = rows.length ? `Showing ${(D.page - 1) * per + 1}–${(D.page - 1) * per + slice.length} of ${rows.length} records` : '';
+  pager($('#dlPager'), D.page, pages, p => { D.page = p; renderDownload(); });
+  updateReady();
+}
+function updateReady() { $('#readyCount').textContent = dlRows.filter(r => r.status === 'ready').length; }
+$('#dlQ').addEventListener('input', e => { S.dl.q = e.target.value; S.dl.page = 1; renderDownload(); });
+$('#dlRefresh').addEventListener('click', () => tableRefresh('#dlBody', 7, renderDownload));
+$('#dlBody').addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]'); if (c) { e.stopPropagation(); return copyText(c.dataset.copy, 'URN copied'); }
+  const tr = e.target.closest('tr[data-urn]'); if (!tr) return;
+  const r = dlRows.find(x => x.urn === tr.dataset.urn); if (!r || !selectable(r)) { if (r && !e.target.closest('.cb')) toast({tone:'info', title:`${DL_STATUS[r.status].l} record`, desc: r.status === 'failed' ? 'This record failed CKYC search. Nothing to download.' : 'This record is still being fetched from the registry.'}); return; }
+  S.dl.sel.has(r.urn) ? S.dl.sel.delete(r.urn) : S.dl.sel.add(r.urn);
+  renderDownload();
+});
+$('#dlAll').addEventListener('click', () => {
+  const able = dlFiltered().filter(selectable);
+  if (S.dl.sel.size === able.length) S.dl.sel.clear(); else able.forEach(r => S.dl.sel.add(r.urn));
+  renderDownload();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]'); if (!b) return; const k = b.dataset.rm; const D = S.dl;
+  if (k === 'all') { D.types.clear(); D.statuses.clear(); D.preset = '30'; D.from = addDays(TODAY,-29); D.to = TODAY; D.q = ''; $('#dlQ').value = ''; }
+  else if (k === 'date') { D.preset = '30'; D.from = addDays(TODAY,-29); D.to = TODAY; }
+  else { const [g, v] = k.split(':'); (g === 'type' ? D.types : D.statuses).delete(v); }
+  D.page = 1; renderDownload();
+});
+function multiMenu(btn, set, entries) {
+  const el = openPop(btn, menuHTML([{v:'__all', l:'All', on:!set.size}, {sep:1}, ...entries.map(([k, l, icon]) => ({v:k, l, icon, on:set.has(k)}))], {multi:true}));
+  if (!el) return;
+  bindMenu(el, (v, b) => {
+    if (v === '__all') set.clear(); else set.has(v) ? set.delete(v) : set.add(v);
+    $$('button[data-v]', el).forEach(x => x.setAttribute('aria-checked', x.dataset.v === '__all' ? !set.size : set.has(x.dataset.v)));
+    S.dl.page = 1; renderDownload(); b.focus();
+  });
+}
+$('#dlTypeBtn').addEventListener('click', e => multiMenu(e.currentTarget, S.dl.types, ID_KEYS.map(k => [k, ID[k].label, ID[k].icon])));
+$('#dlStatusBtn').addEventListener('click', e => multiMenu(e.currentTarget, S.dl.statuses, Object.entries(DL_STATUS).map(([k, s]) => [k, s.l])));
+
+/* Filters panel (Figma 09) — edits a draft, applies on "Apply filters" */
+$('#dlFilterBtn').addEventListener('click', e => {
+  const D = S.dl; const dr = {types:new Set(D.types), statuses:new Set(D.statuses), preset:D.preset, from:D.from, to:D.to};
+  const draw = el => {
+    $('#fpDates', el).innerHTML = PRESETS.map(p => `<button class="chip" data-p="${p[0]}" aria-pressed="${dr.preset === p[0]}">${dr.preset === p[0] ? ico('i-check') : ''}${p[1]}</button>`).join('') + `<button class="chip" data-p="custom" aria-pressed="${dr.preset === 'custom'}">${dr.preset === 'custom' ? ico('i-check') : ''}Custom</button>`;
+    $('#fpFrom', el).value = dr.from; $('#fpTo', el).value = dr.to;
+    $('#fpTypes', el).innerHTML = ID_KEYS.map(k => `<button class="chip" data-t="${k}" aria-pressed="${dr.types.has(k)}">${dr.types.has(k) ? ico('i-check') : ''}${ID[k].label}</button>`).join('');
+    $('#fpStatus', el).innerHTML = Object.entries(DL_STATUS).map(([k, s]) => `<button class="chip" data-s="${k}" aria-pressed="${dr.statuses.has(k)}">${dr.statuses.has(k) ? ico('i-check') : ''}${s.l}</button>`).join('');
+    const n = dlRows.filter(r => (!dr.types.size || dr.types.has(r.idType)) && (!dr.statuses.size || dr.statuses.has(r.status)) && ymd(r.created) >= dr.from && ymd(r.created) <= dr.to).length;
+    $('#fpApply', el).textContent = `Show ${n} record${n === 1 ? '' : 's'}`;
+    $('#fpApply', el).disabled = dr.from > dr.to;
+    $('#fpErr', el).textContent = dr.from > dr.to ? '“From” must be on or before “To”.' : '';
+  };
+  openPop(e.currentTarget, `<div class="pop-panel">
+      <div class="pop-head"><h3>Filters</h3><button class="link-btn" id="fpReset" style="font-size:12.5px">Reset all</button></div>
+      <div class="pop-sec"><h4>Created date</h4><div class="date-pair"><div class="field"><label for="fpFrom">From</label><input class="input" type="date" id="fpFrom" max="${TODAY}"></div><div class="field"><label for="fpTo">To</label><input class="input" type="date" id="fpTo" max="${TODAY}"></div></div><div class="chips" id="fpDates"></div><span class="hint bad" id="fpErr"></span></div>
+      <div class="pop-sec"><h4>ID type</h4><div class="chips" id="fpTypes"></div></div>
+      <div class="pop-sec"><h4>Status</h4><div class="chips" id="fpStatus"></div></div>
+      <div class="pop-foot"><button class="btn btn-outline" id="fpCancel">Cancel</button><button class="btn btn-primary" id="fpApply" style="flex:1">Apply filters</button></div>
+    </div>`, {width:440, align:'right', onMount: el => {
+      draw(el);
+      el.addEventListener('click', ev => {
+        const p = ev.target.closest('[data-p]'), t = ev.target.closest('[data-t]'), s = ev.target.closest('[data-s]');
+        if (p) { dr.preset = p.dataset.p; if (dr.preset !== 'custom') { dr.from = addDays(TODAY, -PRESETS.find(x => x[0] === dr.preset)[2]); dr.to = TODAY; } else $('#fpFrom', el).focus(); }
+        if (t) dr.types.has(t.dataset.t) ? dr.types.delete(t.dataset.t) : dr.types.add(t.dataset.t);
+        if (s) dr.statuses.has(s.dataset.s) ? dr.statuses.delete(s.dataset.s) : dr.statuses.add(s.dataset.s);
+        if (p || t || s) draw(el);
+      });
+      ['fpFrom','fpTo'].forEach(id => $('#' + id, el).addEventListener('change', ev => { dr[id === 'fpFrom' ? 'from' : 'to'] = ev.target.value; dr.preset = 'custom'; draw(el); }));
+      $('#fpReset', el).onclick = () => { dr.types.clear(); dr.statuses.clear(); dr.preset = '30'; dr.from = addDays(TODAY,-29); dr.to = TODAY; draw(el); };
+      $('#fpCancel', el).onclick = closeOverlays;
+      $('#fpApply', el).onclick = () => { Object.assign(D, {types:dr.types, statuses:dr.statuses, preset:dr.preset, from:dr.from, to:dr.to, page:1}); closeOverlays(); renderDownload(); };
+    }});
+});
+
+/* Download dialog (Figma 11 / 11b) */
+const FORMATS = {
+  csv:{l:'CSV', d:'One row per record with all KYC fields', icon:'i-csv', ext:'csv'},
+  xlsx:{l:'Excel (.xlsx)', d:'Formatted workbook, one sheet per record', icon:'i-sheet', ext:'xlsx'},
+  zip:{l:'ZIP bundle', d:'KYC data plus photo and ID document images', icon:'i-zip', ext:'zip'},
+};
+let dlPrefs = {fmt:'csv', mask:true};
+function exportRows(urns, mask) {
+  const rows = dlRows.filter(r => urns.includes(r.urn));
+  const head = ['processing_urn','id_type','id_number','full_name','created_on_ist','kyc_records'];
+  const lines = rows.map(r => [r.urn, ID[r.idType].label, mask ? ID[r.idType].mask(r.idNum) : (ID[r.idType].show ? ID[r.idType].show(r.idNum) : r.idNum), r.name, fmtDT(r.created).replace(',', ''), r.records].map(v => /[",]/.test(String(v)) ? `"${String(v).replace(/"/g,'""')}"` : v).join(','));
+  return [head.join(','), ...lines].join('\n');
+}
+function openDownloadDialog() {
+  const urns = [...S.dl.sel]; if (!urns.length) return;
+  const sel = dlRows.filter(r => urns.includes(r.urn)); const entries = sel.reduce((a, r) => a + r.records, 0);
+  const size = f => f === 'zip' ? `~${(entries * 0.4).toFixed(1)} MB` : `~${Math.max(1, Math.round(entries * (f === 'csv' ? 0.6 : 2.2)))} KB`;
+  openDialog(`<div class="dialog-head"><div><h2 id="ddH">Download records</h2><p class="tnum">${urns.length} record${urns.length === 1 ? '' : 's'} selected · ${entries} KYC entr${entries === 1 ? 'y' : 'ies'}</p></div><button class="icon-btn" data-close aria-label="Close">${ico('i-x')}</button></div>
+    <div class="dialog-body">
+      <span class="field-label">Choose a format</span>
+      <div role="radiogroup" aria-label="Format" style="display:flex;flex-direction:column;gap:10px" id="ddFmts">${Object.entries(FORMATS).map(([k, f]) => `<button class="opt" role="radio" aria-checked="${dlPrefs.fmt === k}" data-f="${k}"><span class="radio"></span><span class="id-icon">${ico(f.icon)}</span><span><b>${f.l}</b><small>${f.d}</small></span><span class="size tnum">${size(k)}</span></button>`).join('')}</div>
+      <div class="check-row" id="ddMask" role="checkbox" tabindex="0" aria-checked="${dlPrefs.mask}" style="margin-top:6px"><span class="cb" aria-checked="${dlPrefs.mask}">${ico('i-check','i-check')}</span><span>Mask ID numbers in the export <span style="color:var(--muted-foreground)">· keeps the last 4 characters</span></span></div>
+      <div class="alert alert-warn" id="ddWarn" ${dlPrefs.mask ? 'hidden' : ''} style="font-size:12.5px">${ico('i-alert')}<div>Unmasked exports carry full ID numbers. Store them per your data retention policy.</div></div>
+    </div>
+    <div class="dialog-foot"><span class="left" id="ddName"></span><button class="btn btn-outline" data-close>Cancel</button><button class="btn btn-primary" id="ddGo">${ico('i-download')}Download</button></div>`,
+  {labelledBy:'ddH', onMount: el => {
+    const name = () => `CKYC_Records_${fileDate}.${FORMATS[dlPrefs.fmt].ext}`;
+    const sync = () => { $$('[data-f]', el).forEach(b => b.setAttribute('aria-checked', b.dataset.f === dlPrefs.fmt)); $('#ddMask', el).setAttribute('aria-checked', dlPrefs.mask); $('#ddMask .cb', el).setAttribute('aria-checked', dlPrefs.mask); $('#ddWarn', el).hidden = dlPrefs.mask; $('#ddName', el).innerHTML = `<span class="mono">${name()}</span>`; };
+    sync();
+    $$('[data-close]', el).forEach(b => b.onclick = closeOverlays);
+    $('#ddFmts', el).addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (b) { dlPrefs.fmt = b.dataset.f; sync(); } });
+    arrowNav($('#ddFmts', el), '[data-f]');
+    const tm = () => { dlPrefs.mask = !dlPrefs.mask; sync(); };
+    $('#ddMask', el).onclick = tm; $('#ddMask', el).onkeydown = e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); tm(); } };
+    $('#ddGo', el).onclick = () => {
+      const b = $('#ddGo', el); b.disabled = true; b.innerHTML = '<span class="spinner"></span>Preparing…';
+      finishDownload(urns, dlPrefs.fmt, dlPrefs.mask, name());
+    };
+  }});
+}
+$('#dlCta').addEventListener('click', openDownloadDialog);
+/* Files are built for real: CSV as text, XLSX via SheetJS, ZIP via JSZip (both lazy-loaded from cdnjs on first use).
+   In the Claude artifact viewer the save goes through the `downloads` capability (viewer confirms);
+   opened as a local file it falls back to a normal browser download. */
+const libs = {};
+function loadLib(key, src) {
+  if (window[key]) return Promise.resolve(window[key]);
+  return libs[key] ||= new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok(window[key]); sc.onerror = () => { delete libs[key]; bad(new Error('load')); }; document.head.appendChild(sc); });
+}
+async function buildFile(urns, fmt, mask) {
+  const csv = exportRows(urns, mask);
+  if (fmt === 'csv') return new Blob([csv], {type:'text/csv'});
+  const rows = dlRows.filter(r => urns.includes(r.urn));
+  const idOut = r => mask ? ID[r.idType].mask(r.idNum) : (ID[r.idType].show ? ID[r.idType].show(r.idNum) : r.idNum);
+  const recordObj = r => ({processing_urn:r.urn, id_type:ID[r.idType].label, id_number:idOut(r), full_name:r.name, created_on_ist:fmtDT(r.created), kyc_records:r.records, ckyc_id_masked:'6001XXXXXX' + r.urn.replace(/\D/g,'').slice(0,4).padEnd(4,'0'), source:'Demo data — Fabric CKYC prototype'});
+  if (fmt === 'xlsx') {
+    const X = await loadLib('XLSX', 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, X.utils.json_to_sheet(rows.map(recordObj)), 'Summary');
+    rows.forEach((r, i) => X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(Object.entries(recordObj(r))), `Record ${i + 1}`));
+    return new Blob([X.write(wb, {bookType:'xlsx', type:'array'})]);
+  }
+  const Z = await loadLib('JSZip', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  const zip = new Z(); const root = zip.folder(`CKYC_Records_${fileDate}`);
+  root.file('records.csv', csv);
+  rows.forEach(r => { const f = root.folder(r.urn.slice(0,12)); f.file('ckyc_record.json', JSON.stringify(recordObj(r), null, 2)); f.file('photo.svg', photoSVG().replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')); });
+  return zip.generateAsync({type:'blob'});
+}
+async function saveFile(name, blob) {
+  let dl = null;
+  try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch {}
+  if (dl) {
+    try { await dl.save({filename:name, data:blob}); return 'saved'; }
+    catch (e) { return e?.code === 'declined' ? 'declined' : 'failed'; }
+  }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return 'saved'; } catch { return 'failed'; }
+}
+function reportSave(res, name, urns, mask, preview) {
+  const n = `${urns.length} record${urns.length === 1 ? '' : 's'}${mask ? ' · IDs masked' : ''}`;
+  if (res === 'saved') toast({title:'Download started', desc:`${name} · ${n}`, action:{label:'Preview contents', fn:preview}, ms:7000});
+  else if (res === 'declined') toast({tone:'info', title:'Download cancelled', desc:'The records stay marked as downloaded in this demo. Preview the file instead.', action:{label:'Preview contents', fn:preview}});
+  else toast({tone:'bad', title:'Couldn’t save the file here', desc:'Your browser blocked the save. Preview the contents instead.', action:{label:'Preview contents', fn:preview}});
+}
+async function finishDownload(urns, fmt, mask, name) {
+  const csv = exportRows(urns, mask);
+  const preview = () => previewExport(name, fmt === 'zip' ? zipManifest(urns, mask) : csv);
+  const done = () => { dlRows.forEach(r => { if (urns.includes(r.urn)) r.status = 'downloaded'; }); if (S.view === 'download') renderDownload(); else updateReady(); };
+  if (fmt === 'zip') {
+    closeOverlays();
+    dlRows.forEach(r => { if (urns.includes(r.urn)) r.status = 'processing'; });
+    S.dl.sel.clear(); renderDownload();
+    toast({tone:'info', title:'Preparing ZIP bundle', desc:`Fetching photos and ID images for ${urns.length} record${urns.length === 1 ? '' : 's'}. You can keep working.`});
+    let blob = null; try { blob = await buildFile(urns, 'zip', mask); } catch {}
+    setTimeout(() => {
+      done();
+      if (!blob) return toast({tone:'bad', title:'ZIP bundle couldn’t be built', desc:'The compression library didn’t load. Check your connection and try again.', action:{label:'Preview contents', fn:preview}});
+      toast({title:'ZIP bundle ready', desc:`${name} · ${(blob.size / 1024).toFixed(1)} KB`, action:{label:'Save ZIP', fn:async () => reportSave(await saveFile(name, blob), name, urns, mask, preview)}, ms:12000});
+    }, 3000);
+    return;
+  }
+  let blob;
+  try { blob = await buildFile(urns, fmt, mask); }
+  catch { closeOverlays(); return toast({tone:'bad', title:'Excel export couldn’t be built', desc:'The spreadsheet library didn’t load. Try CSV, or check your connection.', action:{label:'Preview contents', fn:preview}}); }
+  closeOverlays();
+  S.dl.sel.clear(); done();
+  reportSave(await saveFile(name, blob), name, urns, mask, preview);
+}
+function zipManifest(urns, mask) {
+  const rows = dlRows.filter(r => urns.includes(r.urn));
+  return [`${`CKYC_Records_${fileDate}`}/`, `├── records.csv`, ...rows.flatMap((r, i) => { const last = i === rows.length - 1; const p = last ? '    ' : '│   '; return [`${last ? '└' : '├'}── ${r.urn.slice(0,12)}/`, `${p}├── photo.jpg`, `${p}├── ${r.idType}_${mask ? 'masked' : 'full'}.jpg`, `${p}└── ckyc_record.json`]; })].join('\n');
+}
+function previewExport(name, text) {
+  openDialog(`<div class="dialog-head"><div><h2 id="pvH">${esc(name)}</h2><p>Preview of the generated export</p></div><button class="icon-btn" data-close aria-label="Close">${ico('i-x')}</button></div>
+    <div class="dialog-body"><pre class="preview" tabindex="0">${esc(text)}</pre></div>
+    <div class="dialog-foot"><button class="btn btn-outline" data-close>Close</button><button class="btn btn-primary" id="pvCopy">${ico('i-copy')}Copy contents</button></div>`,
+  {cls:'', labelledBy:'pvH', onMount: el => { el.style.maxWidth = '760px'; $$('[data-close]', el).forEach(b => b.onclick = closeOverlays); $('#pvCopy', el).onclick = () => copyText(text, 'Export copied'); }});
+}
+
+/* ================= Command palette ================= */
+function openCmd() {
+  const base = [
+    {g:'Pages', l:'Overview', i:'i-grid', r:'Analytics', fn:() => go('overview')},
+    {g:'Pages', l:'CKYC Search', i:'i-search', r:'CKYC', fn:() => go('search')},
+    {g:'Pages', l:'CKYC Download', i:'i-download', r:'CKYC', fn:() => go('download')},
+    {g:'Actions', l:'Search a CKYC record', i:'i-plus', fn:() => { resetFlow(); go('flow'); }},
+    {g:'Actions', l:'Download all ready records', i:'i-download', fn:() => { S.dl.statuses = new Set(['ready']); S.dl.types.clear(); S.dl.preset = '90'; S.dl.from = addDays(TODAY,-89); S.dl.to = TODAY; go('download'); dlFiltered().filter(selectable).forEach(r => S.dl.sel.add(r.urn)); renderDownload(); }},
+    {g:'Actions', l:'Show failed uploads', i:'i-alert', fn:() => { S.se.status = 'failed'; S.se.preset = '90'; S.se.from = addDays(TODAY,-89); go('search'); }},
+  ];
+  let idx = 0, list = base;
+  const box = openDialog(`<div class="cmd-input">${ico('i-search')}<input id="cmdQ" placeholder="Type a page, action or URN…" autocomplete="off" aria-label="Command search" aria-controls="cmdList" autofocus><kbd>Esc</kbd></div><div class="cmd-list" id="cmdList" role="listbox"></div>`, {cls:'cmd'});
+  const draw = () => {
+    const q = $('#cmdQ').value.trim().toUpperCase();
+    list = base.filter(x => !q || x.l.toUpperCase().includes(q));
+    if (q.length >= 3) {
+      seRows.filter(r => r.urn.includes(q)).slice(0, 5).forEach(r => list.push({g:'Search records', l:r.urn.slice(0,22) + '…', i:'i-search', r:SE_STATUS[r.status].l, mono:1, fn:() => { go('search'); openSeSheet(r.urn); }}));
+      dlRows.filter(r => r.urn.includes(q) || r.idNum.toUpperCase().includes(q)).slice(0, 5).forEach(r => list.push({g:'Download records', l:`${r.urn.slice(0,14)}… · ${ID[r.idType].label}`, i:'i-download', r:DL_STATUS[r.status].l, mono:1, fn:() => { S.dl.q = r.urn.slice(0,12); $('#dlQ').value = S.dl.q; S.dl.preset = '90'; S.dl.from = addDays(TODAY,-89); S.dl.to = TODAY; go('download'); }}));
+    }
+    idx = Math.min(idx, Math.max(0, list.length - 1));
+    let g = '';
+    $('#cmdList').innerHTML = list.length ? list.map((x, i) => (x.g !== g ? `<div class="cmd-h">${g = x.g}</div>` : '') + `<button class="cmd-item" role="option" aria-selected="${i === idx}" data-i="${i}">${ico(x.i)}<span class="${x.mono ? 'mono' : ''}">${esc(x.l)}</span>${x.r ? `<span class="r">${x.r}</span>` : ''}</button>`).join('') : `<div class="cmd-empty">No pages, actions or URNs match “${esc($('#cmdQ').value)}”.</div>`;
+  };
+  draw();
+  $('#cmdQ').addEventListener('input', () => { idx = 0; draw(); });
+  $('#cmdQ').addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); idx = (idx + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % Math.max(1, list.length); draw(); $('[aria-selected="true"]', box)?.scrollIntoView({block:'nearest'}); }
+    if (e.key === 'Enter' && list[idx]) { e.preventDefault(); const f = list[idx].fn; closeOverlays(); f(); }
+  });
+  $('#cmdList').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { const f = list[+b.dataset.i].fn; closeOverlays(); f(); } });
+}
+$('#cmdkBtn').addEventListener('click', openCmd);
+
+/* ================= Top-nav menus ================= */
+$('#bellBtn').addEventListener('click', e => {
+  const el = openPop(e.currentTarget, `<div class="menu notif"><div class="menu-h" style="font-weight:700;color:var(--foreground)">Notifications</div>
+    <div class="notif-item"><i style="background:var(--c-green)"></i><div>Bulk search finished for 3 uploads<small>Today, ${tF.format(minsAgo(40))} IST</small></div></div>
+    <div class="notif-item"><i style="background:var(--c-red)"></i><div>Upload <span class="mono">${seRows.find(r => r.status === 'failed')?.urn.slice(0,10) ?? '—'}…</span> failed validation<small>Yesterday</small></div></div>
+    <div class="notif-item"><i style="background:var(--c-blue)"></i><div>${dlRows.filter(r => r.status === 'ready').length} records ready to download<small>Updated live</small></div></div>
+    <hr><button data-v="dl">${ico('i-download')}Open CKYC Download</button></div>`, {width:340, align:'right'});
+  $('#bellDot').hidden = true;
+  if (el) bindMenu(el, v => { if (v === 'dl') go('download'); });
+});
+$('#userBtn').addEventListener('click', e => {
+  const el = openPop(e.currentTarget, `<div class="menu"><div class="menu-h"><b style="color:var(--foreground)">Kushal Gambhir</b><br>Fabric · Production</div><hr>
+    <button data-v="profile">${ico('i-user')}Profile</button><button data-v="keys">${ico('i-key')}API credentials</button><hr><button data-v="out">${ico('i-out')}Sign out</button></div>`, {width:230, align:'right'});
+  if (el) bindMenu(el, v => { closeOverlays(); toast({tone:'info', title: v === 'out' ? 'Sign out is disabled in the demo' : 'Not part of this prototype', desc: 'Account settings live in the main Decentro dashboard.'}); });
+});
+
+/* ================= Boot ================= */
+const startHash = location.hash.slice(1);
+const map = {'search-record':'flow'};
+if (map[startHash] === 'flow') { resetFlow(); go('flow'); } else go(VIEWS[startHash] ? startHash : 'overview');
+addEventListener('hashchange', () => { const h = location.hash.slice(1); const v = map[h] || h; if (v !== S.view && VIEWS[v]) { if (v === 'flow') resetFlow(); go(v); } });
+})();
+</script>
+
+</body></html>
