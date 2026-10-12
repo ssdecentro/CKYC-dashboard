@@ -59,9 +59,7 @@ a{color:inherit}
 .app{height:100%;display:grid;grid-template-rows:var(--nav-h) minmax(0,1fr);grid-template-columns:var(--side-w) minmax(0,1fr);grid-template-areas:"nav nav" "side main"}
 .topnav{grid-area:nav;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--background);z-index:20}
 .brand{display:flex;align-items:center;gap:10px;min-width:calc(var(--side-w) - 40px);text-decoration:none}
-.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:#fff}
-.brand-mark svg{width:16px;height:16px}
-.brand-word{font-weight:700;font-size:15px;letter-spacing:.22em}
+.brand-logo{display:block;flex:none}
 .brand-prod{font-size:11px;font-weight:600;color:var(--subtle);background:var(--secondary);border-radius:var(--radius-sm);padding:2px 7px;letter-spacing:.02em}
 .cmdk{flex:1;max-width:440px;height:38px;display:flex;align-items:center;gap:10px;padding:0 10px 0 12px;border:1px solid var(--border);border-radius:var(--radius);color:var(--muted-foreground);background:var(--background);font-size:13px;text-align:left}
 .cmdk:hover{border-color:var(--border-strong)}
@@ -349,7 +347,7 @@ dl{margin:0}
 .fmt{font-family:var(--mono);font-size:13px;background:var(--secondary);border-radius:var(--radius-sm);padding:8px 10px;color:var(--foreground)}
 
 /* ---------- Overlays ---------- */
-.pop{position:fixed;z-index:60;max-height:calc(100vh - 24px);overflow-y:auto;background:var(--background);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-pop);min-width:220px;max-width:calc(100vw - 24px);animation:popin .14s ease}
+.pop{position:fixed;z-index:60;background:var(--background);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-pop);min-width:220px;max-width:calc(100vw - 24px);animation:popin .14s ease}
 @keyframes popin{from{opacity:0;transform:translateY(-4px)}}
 .menu{padding:6px;display:flex;flex-direction:column}
 .menu button{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:var(--radius-sm);font-size:13px;text-align:left;color:var(--strong)}
@@ -358,13 +356,53 @@ dl{margin:0}
 .menu button[aria-checked="true"] .tick{opacity:1}
 .menu hr{border:0;border-top:1px solid var(--border);margin:6px 0}
 .menu .menu-h{padding:6px 10px;font-size:12px;color:var(--muted-foreground)}
-.pop-panel{width:400px;padding:18px;display:flex;flex-direction:column;gap:18px}
+.pop-panel{padding:18px;display:flex;flex-direction:column;gap:16px}
+.pop-panel .pop-head{gap:10px;justify-content:flex-start}
+.pop-panel .pop-head h3{margin-right:auto}
+.pop-panel .pop-head .link-btn:first-child{margin-right:6px}
+.sec-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sec-note{font-size:12px;color:var(--subtle)}
+.chip-grid{display:grid;gap:6px}
+.chip-grid .chip{justify-content:center;padding:0 6px;min-width:0;white-space:nowrap}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fp-cal{display:flex;justify-content:center}
+.rp{display:grid;grid-template-columns:150px auto}
+.rp-presets{display:flex;flex-direction:column;gap:2px;padding:12px 10px;border-right:1px solid var(--border)}
+.rp-presets button{height:34px;padding:0 10px;border-radius:var(--radius-sm);font-size:13px;text-align:left;color:var(--strong);white-space:nowrap}
+.rp-presets button:hover{background:var(--hover)}
+.rp-presets button[aria-pressed="true"]{background:var(--secondary);color:var(--foreground);font-weight:600}
+.rp-main{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.rp-foot{display:flex;align-items:center;gap:8px;border-top:1px solid var(--border);padding-top:12px}
+.rp-sum{margin-right:auto;font-size:12.5px;color:var(--subtle)}
+.rp.stack{grid-template-columns:minmax(0,1fr)}
+.rp.stack .rp-presets{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--border);padding:10px}
+.rp.stack .rp-presets button{height:30px;border:1px solid var(--border);font-size:12px}
+.rp.stack .rp-foot{flex-wrap:wrap}
+.rp.stack .rp-sum{flex-basis:100%}
+.cal{position:relative;display:flex;gap:24px;justify-content:center}
+.cal-nav{position:absolute;top:-2px;width:28px;height:28px;border-radius:var(--radius-sm);display:grid;place-items:center;color:var(--strong);border:1px solid var(--border);background:var(--background)}
+.cal-nav:hover:not(:disabled){background:var(--secondary)}
+.cal-nav:disabled{color:var(--disabled-fg);cursor:not-allowed}
+.cal-nav.prev{left:0}.cal-nav.next{right:0}
+.cal-month{display:flex;flex-direction:column;gap:8px}
+.cal-cap{height:24px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:600}
+.cal-grid{display:grid;grid-template-columns:repeat(7,36px);grid-auto-rows:34px;row-gap:2px}
+.wd{display:grid;place-items:center;font-size:11.5px;color:var(--muted-foreground);height:26px}
+.day{font-size:13px;color:var(--foreground);border-radius:8px;position:relative;font-variant-numeric:tabular-nums}
+.day:hover:not(:disabled){background:var(--secondary)}
+.day:disabled{color:var(--disabled-fg);cursor:not-allowed}
+.day.t{font-weight:700}
+.day.t::after{content:"";position:absolute;left:50%;bottom:4px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:currentColor}
+.day.in{background:var(--secondary);border-radius:0}
+.day.pv{background:var(--secondary)}
+.day.s,.day.e{background:var(--primary)!important;color:#fff}
+.day.s{border-radius:8px 0 0 8px}.day.e{border-radius:0 8px 8px 0}.day.s.e,.day.solo{border-radius:8px}
 .pop-head{display:flex;align-items:center;justify-content:space-between}
 .pop-head h3{margin:0;font-size:15px}
 .pop-sec{display:flex;flex-direction:column;gap:10px}
 .pop-sec h4{margin:0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground)}
-.date-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.date-pair .input{font-size:13px}
 .pop-foot{display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--border)}
 .notif{width:340px}
 .notif-item{display:flex;gap:10px;padding:10px;border-radius:var(--radius-sm);font-size:13px}
@@ -460,6 +498,7 @@ pre.preview{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;ba
 @media (max-width:640px){
   .topnav{gap:8px;padding:0 12px}
   .brand-prod{display:none}
+  .brand-logo{width:121px;height:15px}
   .page-head h1{font-size:21px}
   .card-head{padding:12px 16px}
   .card-body{padding:16px}
@@ -476,6 +515,9 @@ pre.preview{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;ba
   .input-group{flex-basis:100%}
   .pop{left:8px!important;right:8px!important;width:auto!important}
   .pop-panel{width:auto}
+  .g5{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
   .card-foot{flex-wrap:wrap}
   .card-foot .btn{flex:1}
   .dialog-foot{flex-wrap:wrap}
@@ -489,11 +531,21 @@ pre.preview{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;ba
   Source design: Figma "Fabric – CKYC Dashboard" (13 frames: Overview, CKYC Search A-flow,
   Download B-flow). Rebuilt in the Decentro dashboard design system (shadcn/ui tokens,
   black primary, 10px radius). All data is mock and seeded; dates/times are pinned to IST.
-  Brand: wordmark is typographic — swap .brand for the <symbol id="decentro-logo"> used in
-  the other UI Demos files before sharing externally.
+  Brand: Decentro Black Transparent logo as inline <symbol id="decentro-logo"> (cropped viewBox).
 ============================================================= -->
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="decentro-logo" viewBox="112 112 2526 314">
+    <polygon fill="#000" points="1589.49 315.17 1435.68 121.4 1435.23 120.87 1375.32 120.87 1375.32 417.62 1435.64 417.62 1435.64 223.31 1589.45 417.08 1589.9 417.62 1649.81 417.62 1649.81 120.87 1589.49 120.87 1589.49 315.17"/>
+    <rect fill="#0092ff" x="120.6" y="357.11" width="60.28" height="60.28"/>
+    <path fill="#000" d="M250.46,120.82H120.69v176.27h60.11v-116h68c62.42,0,102.83,34.9,102.83,88.17s-40.41,88.16-102.83,88.16h-7.730v60.25h9.39c96.25,0,162-59.37,162-148.41s-65.77-148.44-162-148.44h0Z"/>
+    <path fill="#000" d="M2587.03,163.29c-27.04-27.03-64.55-41.85-105.7-41.85s-78.72,14.92-105.78,42c-27.07,27.08-42.04,64.69-42.04,105.81s14.93,78.69,42.04,105.8,64.64,42.01,105.78,42.01,78.72-14.87,105.74-41.85c27.020-26.99,42.04-64.69,42.04-105.95s-14.97-78.9-42.09-105.95l.01-.02ZM2418.6,203.4c16.03-16.67,38.28-25.86,62.69-25.86s46.6,9.19,62.69,25.86c16.09,16.67,24.97,40.13,24.97,65.84s-8.86,49.08-24.97,65.83c-16.1,16.75-38.28,25.86-62.69,25.86s-46.66-9.18-62.69-25.86-24.97-40.13-24.97-65.83,8.87-49.09,24.97-65.84Z"/>
+    <path fill="#000" d="M1021.78,368.71l1.07,1.17c-1.7,1.91-3.46,3.77-5.28,5.59-24.05,24.05-56.46,38.49-92.31,41.38-4.43.35-8.91.53-13.43.53s-8.91-.18-13.29-.53c-4.49-.36-8.92-.9-13.29-1.61-2.18-.36-4.35-.77-6.49-1.21h-.02c-2.15-.45-4.28-.94-6.38-1.47h-.02c-.79-.2-1.58-.41-2.37-.62-3.15-.85-6.26-1.8-9.33-2.84-.77-.26-1.53-.53-2.3-.8-1.85-.66-3.690-1.36-5.51-2.1-1.21-.5-2.41-1-3.6-1.52,0,0-.01.01-.01,0-1.19-.52-2.37-1.06-3.55-1.61-.787-.367-.79-.367-.01,0-14.71-6.92-28.07-16.23-39.55-27.72-27.11-27.15-42.04-64.75-42.04-105.92s14.97-78.82,42.04-105.93c15.66-15.67,34.81-27.28,56.15-34.3.68-.22,1.38-.44,2.07-.66h.01c2.46-.76,4.95-1.47,7.47-2.12,1.68-.43,3.37-.84,5.07-1.21h.01c5.44-1.2,11-2.12,16.65-2.75,2.26-.25,4.53-.45,6.82-.61,3.79-.26,7.61-.39,11.47-.39.97,0,1.93,0,2.89.02.54.01,1.09.03,1.63.04.86.02,1.72.05,2.57.09.64.02,1.28.05,1.91.09.72.04,1.43.08,2.14.12.14.02.27.02.4.03,2.12.15,4.23.33,6.33.56,1.06.11,2.13.24,3.18.37.9.12,1.79.24,2.68.37,2.27.33,4.52.7,6.75,1.12,1.56.3,3.1.61,4.64.95s3.06.7,4.58,1.08c.76.19,1.52.39,2.27.59,2.27.62,4.51,1.28,6.72,1.98,21.69,6.94,41.15,18.61,57.010,34.48,2.01,2,3.95,4.06,5.81,6.19l-36.33,35.62-.56.48-5.5,5.4c-1.98-2.63-4.12-5.15-6.41-7.52-16.09-16.69-38.28-25.89-62.69-25.89-22.62,0-43.38,7.9-59.06,22.34-.19.17-.37.34-.55.51-1.05.98-2.080,2-3.08,3.04-16.09,16.77-24.96,40.19-24.96,65.91s8.94,49.21,24.96,65.9c.9.94,1.83,1.86,2.77,2.75,15.78,14.96,36.89,23.14,59.92,23.14,24.41,0,46.59-9.12,62.69-25.89,2.23-2.32,4.32-4.77,6.26-7.34l31.49,31.26.54.59,8.95,8.89v-.02Z"/>
+    <polygon fill="#000" points="1710.09 180.9 1810.42 180.9 1810.42 416.9 1870.7 416.9 1870.7 180.9 1971.03 180.9 1971.03 120.62 1710.09 120.62 1710.09 180.9"/>
+    <path fill="#000" d="M2273.07,226.87c0-61.16-49.34-106.01-114.55-106.01h-127.21v296.76h60.26v-85.62h45.95c3.62,0,7.36,0,11.06-.34l57.67,85.96h66.82l-64.21-97.33c41.46-16.21,64.21-50.5,64.21-93.42h0ZM2091.59,181.14h64.33c56.97,0,56.97,38.25,56.970,45.73,0,7.93,0,44.81-56.97,44.81h-64.33v-90.54h0Z"/>
+    <polygon fill="#000" points="532.99 299.14 643.44 299.14 643.44 238.86 532.99 238.86 532.99 181.2 703.17 181.2 703.17 120.62 472.75 120.62 472.75 417.38 703.72 417.38 703.72 357.29 532.99 357.29 532.99 299.14"/>
+    <polygon fill="#000" points="1144.31 299.14 1254.76 299.14 1254.76 238.86 1144.31 238.86 1144.31 181.2 1314.48 181.2 1314.48 120.62 1084.06 120.62 1084.06 417.38 1315.04 417.38 1315.04 357.29 1144.31 357.29 1144.31 299.14"/>
+  </symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
@@ -542,8 +594,7 @@ pre.preview{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;ba
   <header class="topnav">
     <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Open navigation"><svg class="ico ico-lg"><use href="#i-menu"/></svg></button>
     <a class="brand" href="#overview" data-go="overview" aria-label="Decentro Fabric home">
-      <span class="brand-mark"><svg class="ico"><use href="#i-layers"/></svg></span>
-      <span class="brand-word">DECENTRO</span>
+      <svg class="brand-logo" width="145" height="18" role="img" aria-label="Decentro"><use href="#decentro-logo"/></svg>
       <span class="brand-prod">Fabric</span>
     </a>
     <button class="cmdk" id="cmdkBtn" aria-label="Search pages, records and actions">
@@ -940,12 +991,15 @@ function openPop(anchor, html, {width, onMount, align = 'left'} = {}) {
   OL.appendChild(el);
   popState = {anchor, el};
   onMount?.(el);
-  const r = anchor.getBoundingClientRect(); const w = el.offsetWidth;
-  let left = align === 'right' ? r.right - w : r.left;
-  left = Math.max(12, Math.min(left, innerWidth - w - 12));
-  let top = r.bottom + 6; const h = el.offsetHeight;
-  if (top + h > innerHeight - 12) top = Math.max(12, innerHeight - h - 12);
-  el.style.left = left + 'px'; el.style.top = top + 'px';
+  const place = () => {
+    const r = anchor.getBoundingClientRect(); const w = el.offsetWidth; const h = el.offsetHeight;
+    let left = align === 'right' ? r.right - w : r.left;
+    left = Math.max(12, Math.min(left, innerWidth - w - 12));
+    let top = r.bottom + 6;
+    if (top + h > innerHeight - 12) top = r.top - 6 - h >= 12 ? r.top - 6 - h : Math.max(12, innerHeight - h - 12);
+    el.style.left = left + 'px'; el.style.top = top + 'px';
+  };
+  popState.place = place; place();
   anchor.setAttribute('aria-expanded','true');
   (el.querySelector('[autofocus]') || el.querySelector('button,input'))?.focus({preventScroll:true});
   return el;
@@ -1072,34 +1126,96 @@ $$('.btn-group [data-range]').forEach(b => b.addEventListener('click', () => {
 $('#ovRefresh').addEventListener('click', () => { ovReload(); toast({tone:'info', title:'Overview refreshed', desc:ovRangeText()}); });
 
 /* ================= Date range popover (shared) ================= */
-const PRESETS = [['today','Today',0],['7','Last 7 days',6],['30','Last 30 days',29],['90','Last 90 days',89]];
+const PRESETS = [['today','Today'],['7','Last 7 days'],['30','Last 30 days'],['90','Last 90 days'],['month','This month']];
+const SHORT = [['today','Today'],['7','7 days'],['30','30 days'],['90','90 days']]; // array: object keys like '7' would sort before 'today'
+function presetRange(k) {
+  if (k === 'month') return {from:TODAY.slice(0,8) + '01', to:TODAY};
+  const back = {today:0, '7':6, '30':29, '90':89}[k];
+  return {from:addDays(TODAY, -back), to:TODAY};
+}
 function rangeLabel(st) { const p = PRESETS.find(p => p[0] === st.preset); return p ? p[1] : `${dayLbl(st.from)} – ${dayLbl(st.to)}`; }
+function rangeSummary(from, to) { if (!from) return 'Pick a start date'; if (!to) return `${dayLbl(from)} – pick an end date`; const n = diffDays(from, to) + 1; return `${from === to ? dayLblY(from) : `${dayLbl(from)} – ${dayLblY(to)}`} · ${n} day${n === 1 ? '' : 's'}`; }
+
+/* @dev Range calendar · shadcn: Calendar mode="range" (Sunday start, future days disabled, IST "today").
+   Click a start day, then an end day; hovering previews the range. */
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const pad2 = n => String(n).padStart(2, '0');
+function mountCalendar(host, {from, to, months = 2, onChange}) {
+  const st = {from, to, hover:null};
+  const ym = s => s.slice(0,7);
+  const shift = (m, n) => { let [y, mo] = m.split('-').map(Number); mo += n; while (mo < 1) { mo += 12; y--; } while (mo > 12) { mo -= 12; y++; } return `${y}-${pad2(mo)}`; };
+  const maxLeft = shift(ym(TODAY), -(months - 1));
+  let left = shift(ym(to || from || TODAY), -(months - 1)); if (left > maxLeft) left = maxLeft;
+  const grid = m => {
+    const [y, mo] = m.split('-').map(Number);
+    const first = new Date(Date.UTC(y, mo - 1, 1)).getUTCDay(); const days = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    let cells = '';
+    for (let i = 0; i < 42; i++) {
+      const d = i - first + 1;
+      if (d < 1 || d > days) { cells += '<span class="day blank"></span>'; continue; }
+      const iso = `${m}-${pad2(d)}`;
+      cells += `<button type="button" class="day${iso === TODAY ? ' t' : ''}" data-d="${iso}" ${iso > TODAY ? 'disabled' : ''} aria-label="${dayLblY(iso)}">${d}</button>`;
+    }
+    return `<div class="cal-month"><div class="cal-cap">${MONTHS[mo - 1]} ${y}</div><div class="cal-grid">${['Su','Mo','Tu','We','Th','Fr','Sa'].map(w => `<span class="wd">${w}</span>`).join('')}${cells}</div></div>`;
+  };
+  const paint = () => {
+    const end = st.to || (st.from && st.hover && st.hover >= st.from ? st.hover : null);
+    $$('.day[data-d]', host).forEach(b => {
+      const d = b.dataset.d;
+      b.classList.toggle('s', d === st.from);
+      b.classList.toggle('e', !!end && d === end);
+      b.classList.toggle('in', !!end && d > st.from && d < end);
+      b.classList.toggle('pv', !st.to && !!end && d > st.from && d <= end);
+      b.classList.toggle('solo', d === st.from && !end);
+      b.setAttribute('aria-pressed', d === st.from || d === st.to);
+    });
+  };
+  const render = () => {
+    const ms = Array.from({length:months}, (_, i) => shift(left, i));
+    host.innerHTML = `<div class="cal"><button type="button" class="cal-nav prev" aria-label="Previous month">${ico('i-chev-l')}</button><button type="button" class="cal-nav next" aria-label="Next month" ${left >= maxLeft ? 'disabled' : ''}>${ico('i-chev-r')}</button>${ms.map(grid).join('')}</div>`;
+    paint();
+  };
+  host.addEventListener('click', e => {
+    if (e.target.closest('.prev')) { left = shift(left, -1); return render(); }
+    if (e.target.closest('.next')) { if (left < maxLeft) left = shift(left, 1); return render(); }
+    const b = e.target.closest('.day[data-d]'); if (!b || b.disabled) return;
+    const d = b.dataset.d;
+    if (!st.from || st.to) { st.from = d; st.to = null; } else if (d < st.from) { st.from = d; } else { st.to = d; }
+    st.hover = null; paint(); onChange?.({from:st.from, to:st.to});
+  });
+  host.addEventListener('mouseover', e => { const b = e.target.closest('.day[data-d]'); if (b && st.from && !st.to) { st.hover = b.dataset.d; paint(); } });
+  host.addEventListener('mouseleave', () => { if (st.hover) { st.hover = null; paint(); } });
+  render();
+  return {set(f, t) { st.from = f; st.to = t; left = shift(ym(t || f), -(months - 1)); if (left > maxLeft) left = maxLeft; render(); }};
+}
+
 function openRangePop(anchor, key) {
   const st = key === 'ov' ? S.ov : S[key];
-  const cur = {from:st.from, to:st.to};
-  openPop(anchor, `<div class="pop-panel">
-      <div class="pop-head"><h3>Created date</h3><span class="hint">IST</span></div>
-      <div class="chips" id="rpChips">${PRESETS.map(p => `<button class="chip" data-p="${p[0]}" aria-pressed="${st.preset === p[0]}">${p[1]}</button>`).join('')}</div>
-      <div class="date-pair">
-        <div class="field"><label for="rpFrom">From</label><input class="input" type="date" id="rpFrom" value="${cur.from}" max="${TODAY}"></div>
-        <div class="field"><label for="rpTo">To</label><input class="input" type="date" id="rpTo" value="${cur.to}" max="${TODAY}"></div>
+  const dr = {from:st.from, to:st.to, preset:st.preset};
+  const months = innerWidth >= 820 ? 2 : 1;
+  openPop(anchor, `<div class="rp${innerWidth < 560 ? ' stack' : ''}">
+      <div class="rp-presets" role="group" aria-label="Quick ranges">${PRESETS.map(p => `<button type="button" data-p="${p[0]}" aria-pressed="${dr.preset === p[0]}">${p[1]}</button>`).join('')}</div>
+      <div class="rp-main">
+        <div id="rpCal"></div>
+        <div class="rp-foot"><span class="rp-sum tnum" id="rpSum"></span><button class="btn btn-outline btn-sm" id="rpCancel">Cancel</button><button class="btn btn-primary btn-sm" id="rpApply">Apply</button></div>
       </div>
-      <span class="hint" id="rpErr"></span>
-      <div class="pop-foot" style="padding-top:0;border:0"><button class="btn btn-outline" id="rpCancel">Cancel</button><button class="btn btn-primary" id="rpApply">Apply range</button></div>
-    </div>`, {width:380, align: key === 'ov' ? 'right' : 'left', onMount: el => {
-      let preset = st.preset;
-      const f = $('#rpFrom', el), t = $('#rpTo', el), err = $('#rpErr', el);
-      $('#rpChips', el).addEventListener('click', e => { const c = e.target.closest('[data-p]'); if (!c) return; preset = c.dataset.p; const p = PRESETS.find(x => x[0] === preset); f.value = addDays(TODAY, -p[2]); t.value = TODAY; $$('[data-p]', el).forEach(x => x.setAttribute('aria-pressed', x === c)); err.textContent = ''; });
-      [f, t].forEach(i => i.addEventListener('input', () => { preset = 'custom'; $$('[data-p]', el).forEach(x => x.setAttribute('aria-pressed', false)); }));
+    </div>`, {align: key === 'ov' ? 'right' : 'left', onMount: el => {
+      const sync = () => {
+        $('#rpSum', el).textContent = rangeSummary(dr.from, dr.to) + ' · IST';
+        $('#rpApply', el).disabled = !(dr.from && dr.to);
+        $$('[data-p]', el).forEach(b => b.setAttribute('aria-pressed', b.dataset.p === dr.preset));
+      };
+      const cal = mountCalendar($('#rpCal', el), {from:dr.from, to:dr.to, months, onChange: v => { dr.from = v.from; dr.to = v.to; dr.preset = 'custom'; sync(); }});
+      $('.rp-presets', el).addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b) return; dr.preset = b.dataset.p; Object.assign(dr, presetRange(dr.preset)); cal.set(dr.from, dr.to); sync(); });
       $('#rpCancel', el).onclick = closeOverlays;
       $('#rpApply', el).onclick = () => {
-        if (!f.value || !t.value) { err.className = 'hint bad'; err.textContent = 'Pick both dates.'; return; }
-        if (f.value > t.value) { err.className = 'hint bad'; err.textContent = '“From” must be on or before “To”.'; return; }
-        st.from = f.value; st.to = t.value; st.preset = preset;
+        if (!(dr.from && dr.to)) return;
+        st.from = dr.from; st.to = dr.to; st.preset = dr.preset;
         closeOverlays();
         if (key === 'ov') { S.ov.range = 'custom'; ovReload(); }
         else { st.page = 1; key === 'se' ? renderSearch() : renderDownload(); }
       };
+      sync();
     }});
 }
 $('#seDateBtn').addEventListener('click', e => openRangePop(e.currentTarget, 'se'));
@@ -1474,36 +1590,53 @@ function multiMenu(btn, set, entries) {
 $('#dlTypeBtn').addEventListener('click', e => multiMenu(e.currentTarget, S.dl.types, ID_KEYS.map(k => [k, ID[k].label, ID[k].icon])));
 $('#dlStatusBtn').addEventListener('click', e => multiMenu(e.currentTarget, S.dl.statuses, Object.entries(DL_STATUS).map(([k, s]) => [k, s.l])));
 
-/* Filters panel (Figma 09) — edits a draft, applies on "Apply filters" */
+/* Filters panel (Figma 09) — edits a draft, applies on "Apply filters".
+   Custom date swaps the panel to a one-month calendar in place (no nested popover, no scroll). */
 $('#dlFilterBtn').addEventListener('click', e => {
   const D = S.dl; const dr = {types:new Set(D.types), statuses:new Set(D.statuses), preset:D.preset, from:D.from, to:D.to};
+  const count = () => dlRows.filter(r => (!dr.types.size || dr.types.has(r.idType)) && (!dr.statuses.size || dr.statuses.has(r.status)) && ymd(r.created) >= dr.from && ymd(r.created) <= dr.to).length;
   const draw = el => {
-    $('#fpDates', el).innerHTML = PRESETS.map(p => `<button class="chip" data-p="${p[0]}" aria-pressed="${dr.preset === p[0]}">${dr.preset === p[0] ? ico('i-check') : ''}${p[1]}</button>`).join('') + `<button class="chip" data-p="custom" aria-pressed="${dr.preset === 'custom'}">${dr.preset === 'custom' ? ico('i-check') : ''}Custom</button>`;
-    $('#fpFrom', el).value = dr.from; $('#fpTo', el).value = dr.to;
-    $('#fpTypes', el).innerHTML = ID_KEYS.map(k => `<button class="chip" data-t="${k}" aria-pressed="${dr.types.has(k)}">${dr.types.has(k) ? ico('i-check') : ''}${ID[k].label}</button>`).join('');
-    $('#fpStatus', el).innerHTML = Object.entries(DL_STATUS).map(([k, s]) => `<button class="chip" data-s="${k}" aria-pressed="${dr.statuses.has(k)}">${dr.statuses.has(k) ? ico('i-check') : ''}${s.l}</button>`).join('');
-    const n = dlRows.filter(r => (!dr.types.size || dr.types.has(r.idType)) && (!dr.statuses.size || dr.statuses.has(r.status)) && ymd(r.created) >= dr.from && ymd(r.created) <= dr.to).length;
-    $('#fpApply', el).textContent = `Show ${n} record${n === 1 ? '' : 's'}`;
-    $('#fpApply', el).disabled = dr.from > dr.to;
-    $('#fpErr', el).textContent = dr.from > dr.to ? '“From” must be on or before “To”.' : '';
+    $('#fpDates', el).innerHTML = SHORT.map(([k, l]) => `<button type="button" class="chip" data-p="${k}" aria-pressed="${dr.preset === k}">${l}</button>`).join('') + `<button type="button" class="chip" data-p="custom" aria-pressed="${dr.preset === 'custom' || dr.preset === 'month'}">${ico('i-cal')}Custom</button>`;
+    $('#fpRange', el).textContent = rangeSummary(dr.from, dr.to);
+    $('#fpTypes', el).innerHTML = ID_KEYS.map(k => `<button type="button" class="chip" data-t="${k}" aria-pressed="${dr.types.has(k)}">${ID[k].label.replace(' Card','')}</button>`).join('');
+    $('#fpStatus', el).innerHTML = Object.entries(DL_STATUS).map(([k, s]) => `<button type="button" class="chip" data-s="${k}" aria-pressed="${dr.statuses.has(k)}">${s.l}</button>`).join('');
+    const n = count(); $('#fpApply', el).textContent = `Show ${n} record${n === 1 ? '' : 's'}`;
   };
-  openPop(e.currentTarget, `<div class="pop-panel">
-      <div class="pop-head"><h3>Filters</h3><button class="link-btn" id="fpReset" style="font-size:12.5px">Reset all</button></div>
-      <div class="pop-sec"><h4>Created date</h4><div class="date-pair"><div class="field"><label for="fpFrom">From</label><input class="input" type="date" id="fpFrom" max="${TODAY}"></div><div class="field"><label for="fpTo">To</label><input class="input" type="date" id="fpTo" max="${TODAY}"></div></div><div class="chips" id="fpDates"></div><span class="hint bad" id="fpErr"></span></div>
-      <div class="pop-sec"><h4>ID type</h4><div class="chips" id="fpTypes"></div></div>
-      <div class="pop-sec"><h4>Status</h4><div class="chips" id="fpStatus"></div></div>
-      <div class="pop-foot"><button class="btn btn-outline" id="fpCancel">Cancel</button><button class="btn btn-primary" id="fpApply" style="flex:1">Apply filters</button></div>
+  openPop(e.currentTarget, `<div class="fp">
+      <div class="pop-panel" id="fpMain">
+        <div class="pop-head"><h3>Filters</h3><button type="button" class="link-btn" id="fpReset" style="font-size:12.5px">Reset all</button></div>
+        <div class="pop-sec"><div class="sec-row"><h4>Created date</h4><span class="sec-note tnum" id="fpRange"></span></div><div class="chip-grid g5" id="fpDates"></div></div>
+        <div class="pop-sec"><h4>ID type</h4><div class="chip-grid g3" id="fpTypes"></div></div>
+        <div class="pop-sec"><h4>Status</h4><div class="chip-grid g4" id="fpStatus"></div></div>
+        <div class="pop-foot"><button type="button" class="btn btn-outline" id="fpCancel">Cancel</button><button type="button" class="btn btn-primary" id="fpApply" style="flex:1">Apply filters</button></div>
+      </div>
+      <div class="pop-panel" id="fpCalView" hidden>
+        <div class="pop-head"><button type="button" class="link-btn" id="fpBack">${ico('i-left')}Filters</button><h3>Custom range</h3></div>
+        <div id="fpCal" class="fp-cal"></div>
+        <div class="pop-foot"><span class="rp-sum tnum" id="fpCalSum"></span><button type="button" class="btn btn-primary" id="fpCalOk">Use range</button></div>
+      </div>
     </div>`, {width:440, align:'right', onMount: el => {
       draw(el);
+      let tmp = {from:dr.from, to:dr.to};
+      const calSync = () => { $('#fpCalSum', el).textContent = rangeSummary(tmp.from, tmp.to); $('#fpCalOk', el).disabled = !(tmp.from && tmp.to); };
+      const showCal = on => { $('#fpMain', el).hidden = on; $('#fpCalView', el).hidden = !on; popState?.place?.(); (on ? $('.day.s', el) || $('#fpBack', el) : $('[data-p="custom"]', el))?.focus(); };
       el.addEventListener('click', ev => {
         const p = ev.target.closest('[data-p]'), t = ev.target.closest('[data-t]'), s = ev.target.closest('[data-s]');
-        if (p) { dr.preset = p.dataset.p; if (dr.preset !== 'custom') { dr.from = addDays(TODAY, -PRESETS.find(x => x[0] === dr.preset)[2]); dr.to = TODAY; } else $('#fpFrom', el).focus(); }
+        if (p) {
+          if (p.dataset.p === 'custom') {
+            tmp = {from:dr.from, to:dr.to};
+            mountCalendar($('#fpCal', el), {from:tmp.from, to:tmp.to, months:1, onChange: v => { tmp = v; calSync(); }});
+            calSync(); return showCal(true);
+          }
+          dr.preset = p.dataset.p; Object.assign(dr, presetRange(dr.preset));
+        }
         if (t) dr.types.has(t.dataset.t) ? dr.types.delete(t.dataset.t) : dr.types.add(t.dataset.t);
         if (s) dr.statuses.has(s.dataset.s) ? dr.statuses.delete(s.dataset.s) : dr.statuses.add(s.dataset.s);
         if (p || t || s) draw(el);
       });
-      ['fpFrom','fpTo'].forEach(id => $('#' + id, el).addEventListener('change', ev => { dr[id === 'fpFrom' ? 'from' : 'to'] = ev.target.value; dr.preset = 'custom'; draw(el); }));
-      $('#fpReset', el).onclick = () => { dr.types.clear(); dr.statuses.clear(); dr.preset = '30'; dr.from = addDays(TODAY,-29); dr.to = TODAY; draw(el); };
+      $('#fpBack', el).onclick = () => showCal(false);
+      $('#fpCalOk', el).onclick = () => { if (!(tmp.from && tmp.to)) return; dr.from = tmp.from; dr.to = tmp.to; dr.preset = 'custom'; draw(el); showCal(false); };
+      $('#fpReset', el).onclick = () => { dr.types.clear(); dr.statuses.clear(); dr.preset = '30'; Object.assign(dr, presetRange('30')); draw(el); };
       $('#fpCancel', el).onclick = closeOverlays;
       $('#fpApply', el).onclick = () => { Object.assign(D, {types:dr.types, statuses:dr.statuses, preset:dr.preset, from:dr.from, to:dr.to, page:1}); closeOverlays(); renderDownload(); };
     }});
